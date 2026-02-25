@@ -39,6 +39,9 @@ If nothing happens, check these basics:
   - On Gmail, it does the same for `strong` text in message content.
   - Hovering a word shows a small popup with a **District** link to:
     - `https://district.net/dashboard/midwestboxbreaks/products?q=<word>`
+
+    ![Example usage](image.png)
+    
 - **How to use**:
   1. Enable the script in TamperMonkey.
   2. Open an eBay orders page or Gmail message.
