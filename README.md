@@ -2,6 +2,31 @@
 
 This repository contains two main scripts for processing scanned card images and converting batch data.
 
+## How to use this repository
+
+If you are new to GitHub, think of this page as a shared folder of files.
+
+### Download everything at once (easiest)
+
+1. Open this repository page in your web browser.
+2. Click the green **Code** button near the top of the file list.
+3. Click **Download ZIP**.
+4. Open your Downloads folder and find the ZIP file.
+5. Double-click the ZIP file to unzip it.
+6. Open the unzipped folder to access all scripts and docs.
+
+### Download just one file
+
+1. Click the file name you want (for example, `README.md`, `GenAI.md`, or a script in `tm/`).
+2. In the file view, click the **Download raw file** button (or open the **Raw** view).
+3. Save the file to your computer.
+
+### If you are not sure where to start
+
+- Read this file (`README.md`) first for the overall workflow.
+- Read `GenAI.md` for simple AI-assisted automation guidance.
+- Read `TemperMonkey.md` for browser script setup and usage.
+
 ## rotate.py
 
 Automatically rotates and moves PNG card scan images to the correct orientation.
