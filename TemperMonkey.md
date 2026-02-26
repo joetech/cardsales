@@ -22,6 +22,7 @@ If you generated a script with ChatGPT or Claude, you can load and test it in a 
 7. Test the script action (for example, click its button if it adds one).
 
 If nothing happens, check these basics:
+
 - The script has the correct `@match` URL for the page you are on.
 - The script is enabled in TamperMonkey.
 - You refreshed the page after saving.
@@ -40,8 +41,8 @@ If nothing happens, check these basics:
   - Hovering a word shows a small popup with a **District** link to:
     - `https://district.net/dashboard/midwestboxbreaks/products?q=<word>`
 
-    ![Example usage](image.png)
-    
+    ![Example usage](img/tm-example-1.png)
+
 - **How to use**:
   1. Enable the script in TamperMonkey.
   2. Open an eBay orders page or Gmail message.

@@ -26,6 +26,7 @@ If you are new to GitHub, think of this page as a shared folder of files.
 - Read this file (`README.md`) first for the overall workflow.
 - Read `GenAI.md` for simple AI-assisted automation guidance.
 - Read `TemperMonkey.md` for browser script setup and usage.
+- Check out [Tools-and-Supplies.md](Tools-and-Supplies.md) for recommended hardware, platforms, and supplies to optimize your card scanning and selling workflow.
 
 ## rotate.py
 
@@ -110,6 +111,7 @@ The template CSV should contain the desired output column headers and a sample r
 Before you convert, you'll want to modify anything in the batch to set up defualts like a description and shipping values.
 
 ## Example Workflow
+
 1. **Get the scanner ID:**
 
    ```bash
@@ -140,6 +142,7 @@ Before you convert, you'll want to modify anything in the batch to set up defual
    Head to Card Dealer Pro and create a new batch, using the rotated images in your batch folder. Once they're all ready to list, export all data to a CSV (like `batch-37-1.csv`) and save it in the this folder.
 
 5. **Convert batch data**:
+
    ```bash
    python3 convert.py --batch batch-37-1.csv --template "District CSV Product Template.csv" --out district-37-1.csv
    ```
