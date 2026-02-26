@@ -23,6 +23,7 @@ If you are new to GitHub, think of this page as a shared folder of files.
 
 ### If you are not sure where to start
 
+- Watch [this presentation](https://district.net/livestream/40a3ce20-d2c7-4679-87ad-ca7c80b7b61a?replay=true) I gave that has over an hour of tips and tricks as well as a live demo of some of the tools presented here.
 - Read this file (`README.md`) first for the overall workflow.
 - Read `GenAI.md` for simple AI-assisted automation guidance.
 - Read `TemperMonkey.md` for browser script setup and usage.
