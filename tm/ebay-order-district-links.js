@@ -4,8 +4,8 @@
 // @version      2.0
 // @description  Adds mouseover District links to item title words on eBay orders page and strong tag words on Gmail messages
 // @author       You
-// @match        https://www.ebay.com/sh/ord/*
-// @match        https://mail.google.com/mail/u/0/*
+// @match        https://www.ebay.com/sh/ord*
+// @match        https://mail.google.com/mail*
 // @grant        none
 // ==/UserScript==
 
