@@ -384,7 +384,9 @@
 
       // IMPORTANT CHANGE: route image URLs through the local proxy
       function proxied(u) {
-        return `/img?u=${encodeURIComponent(u)}`;
+        // Always clean: background removal + trim + padding
+        const v = Date.now(); // cache-buster
+        return `/img-clean?u=${encodeURIComponent(u)}&pad=10&v=${v}`;
       }
 
       async function fetchImageBitmapThroughProxy(url) {
@@ -621,7 +623,28 @@
       function updatePostText() {
         const cta = $('cta').value.trim();
         const setTxt = selectedSet ? `${selectedSet}` : 'new cards';
-        $('postText').textContent = `Just listed a bunch of ${setTxt} cards. ${cta}`.trim();
+
+        // Find highest priced selected item
+        const used = selected.filter((s) => s.use);
+        let lookLine = '';
+
+        if (used.length) {
+          const top = [...used].sort(
+            (a, b) => (Number(b.sale_price) || 0) - (Number(a.sale_price) || 0)
+          )[0];
+
+          if (top && top.title) {
+            const raw = String(top.title).trim();
+            const dashIndex = raw.indexOf(' - ');
+            const prefix = dashIndex >= 0 ? raw.slice(0, dashIndex).trim() : raw;
+            if (prefix) {
+              lookLine = `Look at that ${prefix}.`;
+            }
+          }
+        }
+
+        $('postText').textContent =
+          `Just listed a bunch of ${setTxt} cards. ${lookLine} Buy now at ${cta}`.trim();
       }
 
       function renderTable() {
