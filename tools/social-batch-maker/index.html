@@ -1,1037 +1,1251 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Social Batch Maker</title>
-  <style>
-    :root { color-scheme: light dark; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; }
-    header { padding: 16px 20px; border-bottom: 1px solid rgba(127,127,127,.25); display:flex; gap:12px; align-items:center; justify-content:space-between; }
-    main { padding: 18px 20px; display:grid; gap:16px; grid-template-columns: 380px 1fr; }
-    @media (max-width: 980px){ main { grid-template-columns: 1fr; } }
-    .card { border: 1px solid rgba(127,127,127,.25); border-radius: 12px; padding: 14px; }
-    .drop {
-      border: 2px dashed rgba(127,127,127,.45);
-      border-radius: 14px;
-      padding: 18px;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      min-height: 160px;
-      text-align:center;
-    }
-    .drop.dragover { outline: 3px solid rgba(90,140,255,.55); outline-offset: 2px; }
-    label { display:block; font-size: 12px; opacity: .85; margin-bottom: 6px; }
-    input[type="text"], input[type="number"] { width: 100%; box-sizing: border-box; padding: 10px 10px; border-radius: 10px; border: 1px solid rgba(127,127,127,.35); }
-    input[type="file"]{ width: 100%; }
-    .row { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-    .row3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
-    button { padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(127,127,127,.35); background: transparent; cursor:pointer; }
-    button.primary { background: rgba(90,140,255,.25); }
-    button:disabled { opacity: .5; cursor:not-allowed; }
-    table { width:100%; border-collapse: collapse; font-size: 13px; }
-    th, td { padding: 10px 8px; border-bottom: 1px solid rgba(127,127,127,.2); vertical-align: top; }
-    th { text-align:left; opacity:.85; }
-    .pill { display:inline-block; padding: 4px 8px; border-radius: 999px; border: 1px solid rgba(127,127,127,.25); font-size: 12px; opacity:.9; }
-    .actions { display:flex; gap:10px; flex-wrap: wrap; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
-    .status { white-space: pre-wrap; font-size: 12px; opacity:.9; }
-    .footer { display:flex; gap:12px; justify-content:space-between; align-items:center; flex-wrap:wrap; }
-    .affiliates a { margin-right: 10px; }
-  </style>
-</head>
-<body>
-  <header>
-    <div>
-      <div style="font-weight:700;">Social Batch Maker</div>
-      <div style="opacity:.75;font-size:12px;">Drag a batch CSV → auto-pick Top N → collage + video + post text</div>
-    </div>
-    <div class="actions">
-      <button id="btnDownloadSummary" disabled>Download summary JSON</button>
-      <button id="btnCopyText" disabled>Copy post text</button>
-    </div>
-  </header>
-
-  <main>
-    <section class="card">
-      <div class="drop" id="dropZone">
-        <div style="font-weight:700;margin-bottom:6px;">Drop CSV or batch-summary.json</div>
-        <div style="opacity:.75;font-size:12px;">CSV must include: <span class="mono">sale_price, front_image, back_image, set</span></div>
-        <div style="opacity:.75;font-size:12px;margin-top:6px;">Cards with broken images will be skipped and backfilled.</div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Social Batch Maker</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Arial,
+          sans-serif;
+        margin: 0;
+      }
+      header {
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      main {
+        padding: 18px 20px;
+        display: grid;
+        gap: 16px;
+        grid-template-columns: 380px 1fr;
+      }
+      @media (max-width: 980px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+      }
+      .card {
+        border: 1px solid rgba(127, 127, 127, 0.25);
+        border-radius: 12px;
+        padding: 14px;
+      }
+      .drop {
+        border: 2px dashed rgba(127, 127, 127, 0.45);
+        border-radius: 14px;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 160px;
+        text-align: center;
+      }
+      .drop.dragover {
+        outline: 3px solid rgba(90, 140, 255, 0.55);
+        outline-offset: 2px;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        opacity: 0.85;
+        margin-bottom: 6px;
+      }
+      input[type='text'],
+      input[type='number'] {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(127, 127, 127, 0.35);
+      }
+      input[type='file'] {
+        width: 100%;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .row3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+      }
+      button {
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(127, 127, 127, 0.35);
+        background: transparent;
+        cursor: pointer;
+      }
+      button.primary {
+        background: rgba(90, 140, 255, 0.25);
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th,
+      td {
+        padding: 10px 8px;
+        border-bottom: 1px solid rgba(127, 127, 127, 0.2);
+        vertical-align: top;
+      }
+      th {
+        text-align: left;
+        opacity: 0.85;
+      }
+      .pill {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(127, 127, 127, 0.25);
+        font-size: 12px;
+        opacity: 0.9;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+      }
+      .status {
+        white-space: pre-wrap;
+        font-size: 12px;
+        opacity: 0.9;
+      }
+      .footer {
+        display: flex;
+        gap: 12px;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .affiliates a {
+        margin-right: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <div style="font-weight: 700">Social Batch Maker</div>
+        <div style="opacity: 0.75; font-size: 12px">
+          Drag a batch CSV → auto-pick Top N → collage + video + post text
+        </div>
       </div>
+      <div class="actions">
+        <button id="btnDownloadSummary" disabled>Download summary JSON</button>
+        <button id="btnCopyText" disabled>Copy post text</button>
+      </div>
+    </header>
 
-      <div style="height:12px"></div>
-
-      <div class="card" style="padding:12px;">
-        <div class="row">
-          <div>
-            <label>Top N (4–10)</label>
-            <input id="topN" type="number" min="4" max="10" step="1" />
+    <main>
+      <section class="card">
+        <div class="drop" id="dropZone">
+          <div style="font-weight: 700; margin-bottom: 6px">Drop CSV or batch-summary.json</div>
+          <div style="opacity: 0.75; font-size: 12px">
+            CSV must include: <span class="mono">sale_price, front_image, back_image, set</span>
           </div>
-          <div>
-            <label>CTA link</label>
-            <input id="cta" type="text" />
+          <div style="opacity: 0.75; font-size: 12px; margin-top: 6px">
+            Cards with broken images will be skipped and backfilled.
           </div>
         </div>
 
-        <div style="height:10px"></div>
+        <div style="height: 12px"></div>
 
-        <div class="row">
-          <div>
-            <label>Logo (PNG, optional)</label>
-            <input id="logoFile" type="file" accept="image/png" />
-            <div style="opacity:.7;font-size:12px;margin-top:6px;">
-              Stored locally after upload; you can replace anytime.
+        <div class="card" style="padding: 12px">
+          <div class="row">
+            <div>
+              <label>Top N (4–10)</label>
+              <input id="topN" type="number" min="4" max="10" step="1" />
+            </div>
+            <div>
+              <label>CTA link</label>
+              <input id="cta" type="text" />
             </div>
           </div>
+
+          <div style="height: 10px"></div>
+
+          <div class="row">
+            <div>
+              <label>Logo (PNG, optional)</label>
+              <input id="logoFile" type="file" accept="image/png" />
+              <div style="opacity: 0.7; font-size: 12px; margin-top: 6px">
+                Stored locally after upload; you can replace anytime.
+              </div>
+            </div>
+            <div>
+              <label>Company credit (footer)</label>
+              <input id="company" type="text" placeholder="Your Company Name" />
+            </div>
+          </div>
+
+          <div style="height: 10px"></div>
+
+          <div class="row3">
+            <div>
+              <label>X username</label><input id="xHandle" type="text" placeholder="cwbreaks" />
+            </div>
+            <div>
+              <label>Instagram username</label
+              ><input id="igHandle" type="text" placeholder="cwbreaks" />
+            </div>
+            <div>
+              <label>Facebook page</label><input id="fbHandle" type="text" placeholder="cwbreaks" />
+            </div>
+          </div>
+          <div style="height: 10px"></div>
+          <div class="row">
+            <div>
+              <label>YouTube</label><input id="ytHandle" type="text" placeholder="cwbreaks" />
+            </div>
+            <div>
+              <label>TikTok</label><input id="ttHandle" type="text" placeholder="cwbreaks" />
+            </div>
+          </div>
+
+          <div style="height: 14px"></div>
+
+          <div class="actions">
+            <button id="btnCollage" class="primary" disabled>
+              Generate collages (square + vertical)
+            </button>
+            <button id="btnVideo" class="primary" disabled>
+              Generate videos (square + vertical)
+            </button>
+            <button id="btnAll" class="primary" disabled>Generate ALL</button>
+          </div>
+
+          <div style="height: 12px"></div>
+          <div class="status mono" id="status">Drop a CSV to begin.</div>
+        </div>
+
+        <div style="height: 12px"></div>
+
+        <div class="footer">
+          <div id="credit"></div>
+          <div class="affiliates" id="affiliates"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div
+          style="
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+          "
+        >
           <div>
-            <label>Company credit (footer)</label>
-            <input id="company" type="text" placeholder="Your Company Name" />
+            <div style="font-weight: 700">Selected cards</div>
+            <div style="opacity: 0.75; font-size: 12px">
+              Front+Back per card. First N platforms used when N &lt; 5.
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center">
+            <span class="pill" id="pillSet">set: —</span>
+            <span class="pill" id="pillCount">cards: 0</span>
           </div>
         </div>
 
-        <div style="height:10px"></div>
+        <div style="height: 10px"></div>
 
-        <div class="row3">
-          <div><label>X username</label><input id="xHandle" type="text" placeholder="cwbreaks" /></div>
-          <div><label>Instagram username</label><input id="igHandle" type="text" placeholder="cwbreaks" /></div>
-          <div><label>Facebook page</label><input id="fbHandle" type="text" placeholder="cwbreaks" /></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Use</th>
+              <th>Sale price</th>
+              <th>Set</th>
+              <th>Title</th>
+              <th>Front / Back</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr>
+              <td colspan="5" style="opacity: 0.7">No data yet.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="height: 12px"></div>
+
+        <div class="card" style="padding: 12px">
+          <div style="font-weight: 700; margin-bottom: 6px">Post text</div>
+          <div class="mono" id="postText" style="white-space: pre-wrap; opacity: 0.9">—</div>
         </div>
-        <div style="height:10px"></div>
-        <div class="row">
-          <div><label>YouTube</label><input id="ytHandle" type="text" placeholder="cwbreaks" /></div>
-          <div><label>TikTok</label><input id="ttHandle" type="text" placeholder="cwbreaks" /></div>
-        </div>
+      </section>
+    </main>
 
-        <div style="height:14px"></div>
+    <!-- CSV parser -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
-        <div class="actions">
-          <button id="btnCollage" class="primary" disabled>Generate collages (square + vertical)</button>
-          <button id="btnVideo" class="primary" disabled>Generate videos (square + vertical)</button>
-          <button id="btnAll" class="primary" disabled>Generate ALL</button>
-        </div>
+    <!-- ffmpeg.wasm (ESM) -->
+    <script type="module">
+      import { FFmpeg } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js';
+      import {
+        fetchFile,
+        toBlobURL,
+      } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
 
-        <div style="height:12px"></div>
-        <div class="status mono" id="status">Drop a CSV to begin.</div>
-      </div>
+      // ----------------------------
+      // Utilities
+      // ----------------------------
+      const $ = (id) => document.getElementById(id);
 
-      <div style="height:12px"></div>
-
-      <div class="footer">
-        <div id="credit"></div>
-        <div class="affiliates" id="affiliates"></div>
-      </div>
-    </section>
-
-    <section class="card">
-      <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-        <div>
-          <div style="font-weight:700;">Selected cards</div>
-          <div style="opacity:.75;font-size:12px;">Front+Back per card. First N platforms used when N &lt; 5.</div>
-        </div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <span class="pill" id="pillSet">set: —</span>
-          <span class="pill" id="pillCount">cards: 0</span>
-        </div>
-      </div>
-
-      <div style="height:10px"></div>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Use</th>
-            <th>Sale price</th>
-            <th>Set</th>
-            <th>Title</th>
-            <th>Front / Back</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody">
-          <tr><td colspan="5" style="opacity:.7;">No data yet.</td></tr>
-        </tbody>
-      </table>
-
-      <div style="height:12px"></div>
-
-      <div class="card" style="padding:12px;">
-        <div style="font-weight:700;margin-bottom:6px;">Post text</div>
-        <div class="mono" id="postText" style="white-space:pre-wrap;opacity:.9;">—</div>
-      </div>
-    </section>
-  </main>
-
-  <!-- CSV parser -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
-  <!-- ffmpeg.wasm (ESM) -->
-  <script type="module">
-    import { FFmpeg } from "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js";
-    import { fetchFile, toBlobURL } from "https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js";
-
-    // ----------------------------
-    // Utilities
-    // ----------------------------
-    const $ = (id) => document.getElementById(id);
-
-    const LS_KEYS = {
-      topN: "sbm.topN",
-      cta: "sbm.cta",
-      company: "sbm.company",
-      x: "sbm.handle.x",
-      ig: "sbm.handle.ig",
-      fb: "sbm.handle.fb",
-      yt: "sbm.handle.yt",
-      tt: "sbm.handle.tt",
-      logo: "sbm.logo.dataUrl",
-      affiliates: "sbm.affiliates" // array of {label,url}
-    };
-
-    function setStatus(msg) { $("status").textContent = msg; }
-    function todayISO() {
-      const d = new Date();
-      const pad = (n) => String(n).padStart(2, "0");
-      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    }
-
-    function sanitizeFilenamePart(s) {
-      return String(s || "")
-        .trim()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-zA-Z0-9_\-]/g, "")
-        .slice(0, 60) || "unknown";
-    }
-
-    function parsePrice(v) {
-      if (v == null) return 0;
-      const n = parseFloat(String(v).replace(/[$,]/g, "").trim());
-      return Number.isFinite(n) ? n : 0;
-    }
-
-    function mostCommonNonEmpty(values) {
-      const m = new Map();
-      for (const raw of values) {
-        const v = String(raw ?? "").trim();
-        if (!v) continue;
-        m.set(v, (m.get(v) || 0) + 1);
-      }
-      let best = "";
-      let bestCount = 0;
-      for (const [k, c] of m.entries()) {
-        if (c > bestCount) { best = k; bestCount = c; }
-      }
-      return best;
-    }
-
-    async function fileToText(file) {
-      return await file.text();
-    }
-
-    async function fileToDataURL(file) {
-      return await new Promise((resolve, reject) => {
-        const fr = new FileReader();
-        fr.onload = () => resolve(fr.result);
-        fr.onerror = reject;
-        fr.readAsDataURL(file);
-      });
-    }
-
-    async function fetchImageBitmap(url) {
-      // Note: If CORS blocks, this will fail. We handle that by skipping/backfilling.
-      const res = await fetch(url, { mode: "cors" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
-      const bmp = await createImageBitmap(blob);
-      return { bmp, blob };
-    }
-
-    function drawCover(ctx, img, x, y, w, h) {
-      const iw = img.width, ih = img.height;
-      const ir = iw / ih;
-      const r = w / h;
-      let sx, sy, sw, sh;
-      if (ir > r) {
-        // image wider: crop left/right
-        sh = ih;
-        sw = ih * r;
-        sx = (iw - sw) / 2;
-        sy = 0;
-      } else {
-        // image taller: crop top/bottom
-        sw = iw;
-        sh = iw / r;
-        sx = 0;
-        sy = (ih - sh) / 2;
-      }
-      ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
-    }
-
-    function drawLogo(ctx, logoImg, W, H) {
-      if (!logoImg) return;
-      const targetW = Math.round(W * 0.10);
-      const aspect = logoImg.width / logoImg.height;
-      const targetH = Math.round(targetW / aspect);
-      const pad = Math.round(W * 0.02);
-      const x = W - targetW - pad;
-      const y = H - targetH - pad;
-      ctx.globalAlpha = 0.9;
-      ctx.drawImage(logoImg, x, y, targetW, targetH);
-      ctx.globalAlpha = 1.0;
-    }
-
-    function drawHandleOverlay(ctx, text, W, H) {
-      if (!text) return;
-      const pad = Math.round(W * 0.03);
-      const fontSize = Math.round(W * 0.035);
-      ctx.font = `600 ${fontSize}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
-      const label = text.trim();
-      const metrics = ctx.measureText(label);
-      const boxW = Math.round(metrics.width + pad * 1.3);
-      const boxH = Math.round(fontSize + pad * 0.9);
-      const x = pad;
-      const y = pad;
-
-      ctx.globalAlpha = 0.75;
-      ctx.fillStyle = "#000";
-      roundRect(ctx, x, y, boxW, boxH, Math.round(fontSize * 0.55), true, false);
-      ctx.globalAlpha = 1.0;
-
-      ctx.fillStyle = "#fff";
-      ctx.fillText(label, x + Math.round(pad * 0.6), y + Math.round(fontSize + pad * 0.15));
-    }
-
-    function roundRect(ctx, x, y, w, h, r, fill, stroke) {
-      if (w < 2*r) r = w/2;
-      if (h < 2*r) r = h/2;
-      ctx.beginPath();
-      ctx.moveTo(x+r, y);
-      ctx.arcTo(x+w, y, x+w, y+h, r);
-      ctx.arcTo(x+w, y+h, x, y+h, r);
-      ctx.arcTo(x, y+h, x, y, r);
-      ctx.arcTo(x, y, x+w, y, r);
-      ctx.closePath();
-      if (fill) ctx.fill();
-      if (stroke) ctx.stroke();
-    }
-
-    function bestFitGrid(tileCount, W, H) {
-      // Simple heuristic for best-fit grid
-      const aspect = W / H;
-      let cols = Math.ceil(Math.sqrt(tileCount * aspect));
-      cols = Math.max(1, cols);
-      let rows = Math.ceil(tileCount / cols);
-      while ((cols - 1) * rows >= tileCount) cols--;
-      rows = Math.ceil(tileCount / cols);
-      return { cols, rows };
-    }
-
-    // ----------------------------
-    // App state
-    // ----------------------------
-    let allRows = [];
-    let selected = []; // {row, use:true, frontUrl, backUrl, salePrice, title, set}
-    let selectedSet = "";
-    let logoImg = null;
-    let summaryForDownload = null;
-
-    const PLATFORM_ORDER = [
-      { key: "x", label: "X", prefix: "@", field: "xHandle" },
-      { key: "ig", label: "Instagram", prefix: "@", field: "igHandle" },
-      { key: "fb", label: "Facebook", prefix: "", field: "fbHandle" },
-      { key: "yt", label: "YouTube", prefix: "", field: "ytHandle" },
-      { key: "tt", label: "TikTok", prefix: "@", field: "ttHandle" }
-    ];
-
-    function getHandles() {
-      return {
-        x: $("xHandle").value.trim(),
-        ig: $("igHandle").value.trim(),
-        fb: $("fbHandle").value.trim(),
-        yt: $("ytHandle").value.trim(),
-        tt: $("ttHandle").value.trim()
+      const LS_KEYS = {
+        topN: 'sbm.topN',
+        cta: 'sbm.cta',
+        company: 'sbm.company',
+        x: 'sbm.handle.x',
+        ig: 'sbm.handle.ig',
+        fb: 'sbm.handle.fb',
+        yt: 'sbm.handle.yt',
+        tt: 'sbm.handle.tt',
+        logo: 'sbm.logo.dataUrl',
+        affiliates: 'sbm.affiliates', // array of {label,url}
       };
-    }
 
-    function handleForCardIndex(i, topN) {
-      // Your rule 1B: if N < 5, show only first N platforms.
-      const maxPlatforms = Math.min(topN, 5);
-      const platform = PLATFORM_ORDER[i % maxPlatforms];
-      const handles = getHandles();
-      const h = handles[platform.key];
-      if (!h) return ""; // if empty, skip overlay for that card
-      const prefix = platform.prefix;
-      // For FB/YT, users may want a name rather than @; do not force prefix except those chosen.
-      return `${platform.label}: ${prefix}${h}`;
-    }
-
-    function enableButtons(enabled) {
-      $("btnCollage").disabled = !enabled;
-      $("btnVideo").disabled = !enabled;
-      $("btnAll").disabled = !enabled;
-      $("btnCopyText").disabled = !enabled;
-      $("btnDownloadSummary").disabled = !enabled;
-    }
-
-    function updateFooter() {
-      const company = $("company").value.trim();
-      $("credit").textContent = company ? `Created by ${company}` : "";
-
-      // Minimal affiliate links block (editable in localStorage later)
-      let aff = [];
-      try { aff = JSON.parse(localStorage.getItem(LS_KEYS.affiliates) || "[]"); } catch {}
-      if (!Array.isArray(aff) || aff.length === 0) {
-        // Default placeholders (user can edit in localStorage or later we add UI)
-        aff = [
-          { label: "Affiliate 1", url: "https://example.com" },
-          { label: "Affiliate 2", url: "https://example.com" }
-        ];
+      function setStatus(msg) {
+        $('status').textContent = msg;
       }
-      $("affiliates").innerHTML = aff
-        .filter(a => a && a.label && a.url)
-        .map(a => `<a href="${a.url}" target="_blank" rel="noopener noreferrer">${a.label}</a>`)
-        .join("");
-    }
-
-    function saveSettingsToLocalStorage() {
-      localStorage.setItem(LS_KEYS.topN, String($("topN").value));
-      localStorage.setItem(LS_KEYS.cta, $("cta").value);
-      localStorage.setItem(LS_KEYS.company, $("company").value);
-      localStorage.setItem(LS_KEYS.x, $("xHandle").value);
-      localStorage.setItem(LS_KEYS.ig, $("igHandle").value);
-      localStorage.setItem(LS_KEYS.fb, $("fbHandle").value);
-      localStorage.setItem(LS_KEYS.yt, $("ytHandle").value);
-      localStorage.setItem(LS_KEYS.tt, $("ttHandle").value);
-      updateFooter();
-    }
-
-    function loadSettingsFromLocalStorage() {
-      $("topN").value = localStorage.getItem(LS_KEYS.topN) || "6";
-      $("cta").value = localStorage.getItem(LS_KEYS.cta) || "https://district.net/u/cwbreaks";
-      $("company").value = localStorage.getItem(LS_KEYS.company) || "CW Breaks";
-      $("xHandle").value = localStorage.getItem(LS_KEYS.x) || "cwbreaks";
-      $("igHandle").value = localStorage.getItem(LS_KEYS.ig) || "cwbreaks";
-      $("fbHandle").value = localStorage.getItem(LS_KEYS.fb) || "cwbreaks";
-      $("ytHandle").value = localStorage.getItem(LS_KEYS.yt) || "cwbreaks";
-      $("ttHandle").value = localStorage.getItem(LS_KEYS.tt) || "cwbreaks";
-      updateFooter();
-    }
-
-    async function loadLogoFromLocalStorage() {
-      const dataUrl = localStorage.getItem(LS_KEYS.logo);
-      if (!dataUrl) { logoImg = null; return; }
-      logoImg = await dataUrlToImage(dataUrl);
-    }
-
-    async function dataUrlToImage(dataUrl) {
-      const img = new Image();
-      img.src = dataUrl;
-      await img.decode();
-      return img;
-    }
-
-    function setPills() {
-      $("pillSet").textContent = `set: ${selectedSet || "—"}`;
-      const usedCount = selected.filter(s => s.use).length;
-      $("pillCount").textContent = `cards: ${usedCount}`;
-    }
-
-    function updatePostText() {
-      const cta = $("cta").value.trim();
-      const setTxt = selectedSet ? `${selectedSet}` : "new cards";
-      const text = `Just listed a bunch of ${setTxt} cards. ${cta}`.trim();
-      $("postText").textContent = text;
-    }
-
-    function renderTable() {
-      const body = $("tableBody");
-      body.innerHTML = "";
-      if (!selected.length) {
-        body.innerHTML = `<tr><td colspan="5" style="opacity:.7;">No data yet.</td></tr>`;
-        return;
+      function todayISO() {
+        const d = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
       }
-      selected.forEach((s, idx) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td><input type="checkbox" ${s.use ? "checked" : ""} data-idx="${idx}" /></td>
+
+      function sanitizeFilenamePart(s) {
+        return (
+          String(s || '')
+            .trim()
+            .replace(/\s+/g, '_')
+            .replace(/[^a-zA-Z0-9_\-]/g, '')
+            .slice(0, 60) || 'unknown'
+        );
+      }
+
+      function parsePrice(v) {
+        if (v == null) return 0;
+        const n = parseFloat(String(v).replace(/[$,]/g, '').trim());
+        return Number.isFinite(n) ? n : 0;
+      }
+
+      function mostCommonNonEmpty(values) {
+        const m = new Map();
+        for (const raw of values) {
+          const v = String(raw ?? '').trim();
+          if (!v) continue;
+          m.set(v, (m.get(v) || 0) + 1);
+        }
+        let best = '';
+        let bestCount = 0;
+        for (const [k, c] of m.entries()) {
+          if (c > bestCount) {
+            best = k;
+            bestCount = c;
+          }
+        }
+        return best;
+      }
+
+      async function fileToText(file) {
+        return await file.text();
+      }
+
+      async function fileToDataURL(file) {
+        return await new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result);
+          fr.onerror = reject;
+          fr.readAsDataURL(file);
+        });
+      }
+
+      async function fetchImageBitmap(url) {
+        // Note: If CORS blocks, this will fail. We handle that by skipping/backfilling.
+        const res = await fetch(url, { mode: 'cors' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const bmp = await createImageBitmap(blob);
+        return { bmp, blob };
+      }
+
+      function drawCover(ctx, img, x, y, w, h) {
+        const iw = img.width,
+          ih = img.height;
+        const ir = iw / ih;
+        const r = w / h;
+        let sx, sy, sw, sh;
+        if (ir > r) {
+          // image wider: crop left/right
+          sh = ih;
+          sw = ih * r;
+          sx = (iw - sw) / 2;
+          sy = 0;
+        } else {
+          // image taller: crop top/bottom
+          sw = iw;
+          sh = iw / r;
+          sx = 0;
+          sy = (ih - sh) / 2;
+        }
+        ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+      }
+
+      function drawLogo(ctx, logoImg, W, H) {
+        if (!logoImg) return;
+        const targetW = Math.round(W * 0.1);
+        const aspect = logoImg.width / logoImg.height;
+        const targetH = Math.round(targetW / aspect);
+        const pad = Math.round(W * 0.02);
+        const x = W - targetW - pad;
+        const y = H - targetH - pad;
+        ctx.globalAlpha = 0.9;
+        ctx.drawImage(logoImg, x, y, targetW, targetH);
+        ctx.globalAlpha = 1.0;
+      }
+
+      function drawHandleOverlay(ctx, text, W, H) {
+        if (!text) return;
+        const pad = Math.round(W * 0.03);
+        const fontSize = Math.round(W * 0.035);
+        ctx.font = `600 ${fontSize}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+        const label = text.trim();
+        const metrics = ctx.measureText(label);
+        const boxW = Math.round(metrics.width + pad * 1.3);
+        const boxH = Math.round(fontSize + pad * 0.9);
+        const x = pad;
+        const y = pad;
+
+        ctx.globalAlpha = 0.75;
+        ctx.fillStyle = '#000';
+        roundRect(ctx, x, y, boxW, boxH, Math.round(fontSize * 0.55), true, false);
+        ctx.globalAlpha = 1.0;
+
+        ctx.fillStyle = '#fff';
+        ctx.fillText(label, x + Math.round(pad * 0.6), y + Math.round(fontSize + pad * 0.15));
+      }
+
+      function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+        if (w < 2 * r) r = w / 2;
+        if (h < 2 * r) r = h / 2;
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+        if (fill) ctx.fill();
+        if (stroke) ctx.stroke();
+      }
+
+      function bestFitGrid(tileCount, W, H) {
+        // Simple heuristic for best-fit grid
+        const aspect = W / H;
+        let cols = Math.ceil(Math.sqrt(tileCount * aspect));
+        cols = Math.max(1, cols);
+        let rows = Math.ceil(tileCount / cols);
+        while ((cols - 1) * rows >= tileCount) cols--;
+        rows = Math.ceil(tileCount / cols);
+        return { cols, rows };
+      }
+
+      // ----------------------------
+      // App state
+      // ----------------------------
+      let allRows = [];
+      let selected = []; // {row, use:true, frontUrl, backUrl, salePrice, title, set}
+      let selectedSet = '';
+      let logoImg = null;
+      let summaryForDownload = null;
+
+      const PLATFORM_ORDER = [
+        { key: 'x', label: 'X', prefix: '@', field: 'xHandle' },
+        { key: 'ig', label: 'Instagram', prefix: '@', field: 'igHandle' },
+        { key: 'fb', label: 'Facebook', prefix: '', field: 'fbHandle' },
+        { key: 'yt', label: 'YouTube', prefix: '', field: 'ytHandle' },
+        { key: 'tt', label: 'TikTok', prefix: '@', field: 'ttHandle' },
+      ];
+
+      function getHandles() {
+        return {
+          x: $('xHandle').value.trim(),
+          ig: $('igHandle').value.trim(),
+          fb: $('fbHandle').value.trim(),
+          yt: $('ytHandle').value.trim(),
+          tt: $('ttHandle').value.trim(),
+        };
+      }
+
+      function handleForCardIndex(i, topN) {
+        // Your rule 1B: if N < 5, show only first N platforms.
+        const maxPlatforms = Math.min(topN, 5);
+        const platform = PLATFORM_ORDER[i % maxPlatforms];
+        const handles = getHandles();
+        const h = handles[platform.key];
+        if (!h) return ''; // if empty, skip overlay for that card
+        const prefix = platform.prefix;
+        // For FB/YT, users may want a name rather than @; do not force prefix except those chosen.
+        return `${platform.label}: ${prefix}${h}`;
+      }
+
+      function enableButtons(enabled) {
+        $('btnCollage').disabled = !enabled;
+        $('btnVideo').disabled = !enabled;
+        $('btnAll').disabled = !enabled;
+        $('btnCopyText').disabled = !enabled;
+        $('btnDownloadSummary').disabled = !enabled;
+      }
+
+      function updateFooter() {
+        const company = $('company').value.trim();
+        $('credit').textContent = company ? `Created by ${company}` : '';
+
+        // Minimal affiliate links block (editable in localStorage later)
+        let aff = [];
+        try {
+          aff = JSON.parse(localStorage.getItem(LS_KEYS.affiliates) || '[]');
+        } catch {}
+        if (!Array.isArray(aff) || aff.length === 0) {
+          // Default placeholders (user can edit in localStorage or later we add UI)
+          aff = [
+            { label: 'Affiliate 1', url: 'https://example.com' },
+            { label: 'Affiliate 2', url: 'https://example.com' },
+          ];
+        }
+        $('affiliates').innerHTML = aff
+          .filter((a) => a && a.label && a.url)
+          .map((a) => `<a href="${a.url}" target="_blank" rel="noopener noreferrer">${a.label}</a>`)
+          .join('');
+      }
+
+      function saveSettingsToLocalStorage() {
+        localStorage.setItem(LS_KEYS.topN, String($('topN').value));
+        localStorage.setItem(LS_KEYS.cta, $('cta').value);
+        localStorage.setItem(LS_KEYS.company, $('company').value);
+        localStorage.setItem(LS_KEYS.x, $('xHandle').value);
+        localStorage.setItem(LS_KEYS.ig, $('igHandle').value);
+        localStorage.setItem(LS_KEYS.fb, $('fbHandle').value);
+        localStorage.setItem(LS_KEYS.yt, $('ytHandle').value);
+        localStorage.setItem(LS_KEYS.tt, $('ttHandle').value);
+        updateFooter();
+      }
+
+      function loadSettingsFromLocalStorage() {
+        $('topN').value = localStorage.getItem(LS_KEYS.topN) || '6';
+        $('cta').value = localStorage.getItem(LS_KEYS.cta) || 'https://district.net/u/cwbreaks';
+        $('company').value = localStorage.getItem(LS_KEYS.company) || 'CW Breaks';
+        $('xHandle').value = localStorage.getItem(LS_KEYS.x) || 'cwbreaks';
+        $('igHandle').value = localStorage.getItem(LS_KEYS.ig) || 'cwbreaks';
+        $('fbHandle').value = localStorage.getItem(LS_KEYS.fb) || 'cwbreaks';
+        $('ytHandle').value = localStorage.getItem(LS_KEYS.yt) || 'cwbreaks';
+        $('ttHandle').value = localStorage.getItem(LS_KEYS.tt) || 'cwbreaks';
+        updateFooter();
+      }
+
+      async function loadLogoFromLocalStorage() {
+        const dataUrl = localStorage.getItem(LS_KEYS.logo);
+        if (!dataUrl) {
+          logoImg = null;
+          return;
+        }
+        logoImg = await dataUrlToImage(dataUrl);
+      }
+
+      async function dataUrlToImage(dataUrl) {
+        const img = new Image();
+        img.src = dataUrl;
+        await img.decode();
+        return img;
+      }
+
+      function setPills() {
+        $('pillSet').textContent = `set: ${selectedSet || '—'}`;
+        const usedCount = selected.filter((s) => s.use).length;
+        $('pillCount').textContent = `cards: ${usedCount}`;
+      }
+
+      function updatePostText() {
+        const cta = $('cta').value.trim();
+        const setTxt = selectedSet ? `${selectedSet}` : 'new cards';
+        const text = `Just listed a bunch of ${setTxt} cards. ${cta}`.trim();
+        $('postText').textContent = text;
+      }
+
+      function renderTable() {
+        const body = $('tableBody');
+        body.innerHTML = '';
+        if (!selected.length) {
+          body.innerHTML = `<tr><td colspan="5" style="opacity:.7;">No data yet.</td></tr>`;
+          return;
+        }
+        selected.forEach((s, idx) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+          <td><input type="checkbox" ${s.use ? 'checked' : ''} data-idx="${idx}" /></td>
           <td>$${s.salePrice.toFixed(2)}</td>
-          <td>${escapeHtml(s.set || "")}</td>
-          <td>${escapeHtml(s.title || "")}</td>
+          <td>${escapeHtml(s.set || '')}</td>
+          <td>${escapeHtml(s.title || '')}</td>
           <td class="mono">
             <div>F: ${escapeHtml(shortUrl(s.frontUrl))}</div>
             <div>B: ${escapeHtml(shortUrl(s.backUrl))}</div>
           </td>
         `;
-        body.appendChild(tr);
-      });
-
-      body.querySelectorAll("input[type=checkbox]").forEach(cb => {
-        cb.addEventListener("change", () => {
-          const i = Number(cb.dataset.idx);
-          selected[i].use = cb.checked;
-          setPills();
+          body.appendChild(tr);
         });
-      });
-    }
 
-    function shortUrl(u) {
-      try {
-        const url = new URL(u);
-        return url.hostname + url.pathname.slice(0, 40) + (url.pathname.length > 40 ? "…" : "");
-      } catch { return String(u).slice(0, 60); }
-    }
-
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
-    }
-
-    function validateRequiredColumns(rows) {
-      const required = ["sale_price", "front_image", "back_image", "set"];
-      const keys = rows.length ? Object.keys(rows[0]) : [];
-      const missing = required.filter(r => !keys.includes(r));
-      return missing;
-    }
-
-    async function selectTopNWithBackfill(rows, topN) {
-      // Sort by sale_price desc
-      const sorted = [...rows].sort((a, b) => parsePrice(b.sale_price) - parsePrice(a.sale_price));
-
-      const picked = [];
-      const errors = [];
-
-      // Try candidates in order until we have topN successful image pairs or run out.
-      for (let i = 0; i < sorted.length && picked.length < topN; i++) {
-        const r = sorted[i];
-        const frontUrl = String(r.front_image || "").trim();
-        const backUrl = String(r.back_image || "").trim();
-        if (!frontUrl || !backUrl) {
-          errors.push({ reason: "missing url(s)", row: r });
-          continue;
-        }
-
-        // Attempt both images now (so we can skip/backfill correctly)
-        try {
-          await fetchImageBitmap(frontUrl);
-          await fetchImageBitmap(backUrl);
-          picked.push({
-            use: true,
-            row: r,
-            frontUrl,
-            backUrl,
-            salePrice: parsePrice(r.sale_price),
-            title: String(r.title || r.card_title || "").trim(),
-            set: String(r.set || "").trim()
+        body.querySelectorAll('input[type=checkbox]').forEach((cb) => {
+          cb.addEventListener('change', () => {
+            const i = Number(cb.dataset.idx);
+            selected[i].use = cb.checked;
+            setPills();
           });
-        } catch (e) {
-          errors.push({ reason: `image fetch failed (${e?.message || e})`, row: r, frontUrl, backUrl });
-          continue;
-        }
+        });
       }
 
-      return { picked, errors };
-    }
-
-    function buildSummaryJSON(originalName) {
-      const topN = Number($("topN").value);
-      const cta = $("cta").value.trim();
-      const handles = getHandles();
-      const used = selected.filter(s => s.use);
-
-      return {
-        schema: "social-batch-maker/v1",
-        created_at: new Date().toISOString(),
-        source: { kind: "csv", name: originalName || "" },
-        settings: {
-          topN,
-          cta,
-          handles,
-          output: { square: true, vertical: true },
-          timings: {
-            fps: 30,
-            frontHoldSec: 1.6,
-            flipSec: 0.6,
-            backHoldSec: 1.2,
-            swipeSec: 0.5
-          }
-        },
-        derived: { set: selectedSet },
-        selected: used.map(s => ({
-          sale_price: s.salePrice,
-          set: s.set,
-          title: s.title,
-          year: s.row.year ?? null,
-          brand: s.row.brand ?? null,
-          card_number: s.row.card_number ?? null,
-          front_image: s.frontUrl,
-          back_image: s.backUrl
-        }))
-      };
-    }
-
-    function downloadBlob(blob, filename) {
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    }
-
-    async function blobFromCanvasPNG(canvas) {
-      return await new Promise(resolve => canvas.toBlob(resolve, "image/png", 1.0));
-    }
-
-    // ----------------------------
-    // Collage
-    // ----------------------------
-    async function generateCollage(targetW, targetH) {
-      const used = selected.filter(s => s.use);
-      const tiles = [];
-      for (const s of used) { tiles.push({ url: s.frontUrl }); tiles.push({ url: s.backUrl }); }
-
-      const canvas = document.createElement("canvas");
-      canvas.width = targetW; canvas.height = targetH;
-      const ctx = canvas.getContext("2d", { alpha: false });
-      ctx.fillStyle = "#111";
-      ctx.fillRect(0, 0, targetW, targetH);
-
-      const { cols, rows } = bestFitGrid(tiles.length, targetW, targetH);
-      const pad = Math.round(targetW * 0.01);
-      const tileW = Math.floor((targetW - pad * (cols + 1)) / cols);
-      const tileH = Math.floor((targetH - pad * (rows + 1)) / rows);
-
-      // Load logo already decoded
-      for (let i = 0; i < tiles.length; i++) {
-        const col = i % cols;
-        const row = Math.floor(i / cols);
-        const x = pad + col * (tileW + pad);
-        const y = pad + row * (tileH + pad);
-
+      function shortUrl(u) {
         try {
-          const { bmp } = await fetchImageBitmap(tiles[i].url);
-          drawCover(ctx, bmp, x, y, tileW, tileH);
+          const url = new URL(u);
+          return url.hostname + url.pathname.slice(0, 40) + (url.pathname.length > 40 ? '…' : '');
         } catch {
-          // Should be rare (we already validated), but draw placeholder
-          ctx.fillStyle = "#333";
-          ctx.fillRect(x, y, tileW, tileH);
-          ctx.fillStyle = "#fff";
-          ctx.font = `600 ${Math.round(tileW*0.08)}px system-ui`;
-          ctx.fillText("IMAGE ERROR", x + 10, y + 30);
+          return String(u).slice(0, 60);
         }
       }
 
-      drawLogo(ctx, logoImg, targetW, targetH);
-
-      return canvas;
-    }
-
-    // ----------------------------
-    // Video frame rendering (JS) + ffmpeg encode
-    // ----------------------------
-    function renderSlideCanvas(targetW, targetH, bmp, handleText) {
-      const canvas = document.createElement("canvas");
-      canvas.width = targetW; canvas.height = targetH;
-      const ctx = canvas.getContext("2d", { alpha: false });
-      ctx.fillStyle = "#111";
-      ctx.fillRect(0, 0, targetW, targetH);
-      drawCover(ctx, bmp, 0, 0, targetW, targetH);
-      drawLogo(ctx, logoImg, targetW, targetH);
-      drawHandleOverlay(ctx, handleText, targetW, targetH);
-      return canvas;
-    }
-
-    function addCanvasFrame(frames, canvas) {
-      frames.push(canvas);
-    }
-
-    function buildFlipFrames(frontCanvas, backCanvas, flipFrameCount) {
-      // Faux 3D flip: shrink width to 0 then expand, switching at midpoint.
-      const W = frontCanvas.width;
-      const H = frontCanvas.height;
-      const frames = [];
-      const mid = Math.floor(flipFrameCount / 2);
-
-      for (let i = 0; i < flipFrameCount; i++) {
-        const t = i / (flipFrameCount - 1);
-        // width scale: 1 -> 0 -> 1
-        const scale = (i <= mid)
-          ? (1 - (i / mid))
-          : ((i - mid) / (flipFrameCount - 1 - mid));
-        const src = (i <= mid) ? frontCanvas : backCanvas;
-
-        const c = document.createElement("canvas");
-        c.width = W; c.height = H;
-        const ctx = c.getContext("2d", { alpha:false });
-        ctx.fillStyle = "#111";
-        ctx.fillRect(0, 0, W, H);
-
-        const w2 = Math.max(1, Math.round(W * scale));
-        const x = Math.round((W - w2) / 2);
-
-        // Draw squished frame
-        ctx.drawImage(src, 0, 0, W, H, x, 0, w2, H);
-
-        frames.push(c);
-      }
-      return frames;
-    }
-
-    function buildSwipeFrames(fromCanvas, toCanvas, swipeFrameCount) {
-      // Left swipe: current moves left, next enters from right
-      const W = fromCanvas.width;
-      const H = fromCanvas.height;
-      const frames = [];
-      for (let i = 0; i < swipeFrameCount; i++) {
-        const t = i / (swipeFrameCount - 1);
-        const dx = Math.round(W * t);
-
-        const c = document.createElement("canvas");
-        c.width = W; c.height = H;
-        const ctx = c.getContext("2d", { alpha:false });
-        ctx.fillStyle = "#111";
-        ctx.fillRect(0, 0, W, H);
-
-        ctx.drawImage(fromCanvas, -dx, 0);
-        ctx.drawImage(toCanvas, W - dx, 0);
-
-        frames.push(c);
-      }
-      return frames;
-    }
-
-    async function encodeVideoWithFFmpeg(frames, fps, outName) {
-      const ffmpeg = new FFmpeg();
-
-      // Load core from CDN (converted to blob URLs so it works on localhost).
-      // NOTE: This requires serving over http://localhost (not file://).
-      const baseURL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm";
-      const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript");
-      const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm");
-
-      ffmpeg.on("log", ({ message }) => {
-        // Keep status small
-        if (message.includes("frame=") || message.includes("time=")) return;
-      });
-
-      await ffmpeg.load({ coreURL, wasmURL });
-
-      // Write frames as PNGs
-      for (let i = 0; i < frames.length; i++) {
-        const blob = await blobFromCanvasPNG(frames[i]);
-        const name = `frame_${String(i).padStart(5, "0")}.png`;
-        await ffmpeg.writeFile(name, await fetchFile(blob));
+      function escapeHtml(s) {
+        return String(s).replace(
+          /[&<>"']/g,
+          (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
+        );
       }
 
-      // Encode
-      // -pix_fmt yuv420p for broad compatibility
-      await ffmpeg.exec([
-        "-framerate", String(fps),
-        "-i", "frame_%05d.png",
-        "-c:v", "libx264",
-        "-preset", "veryfast",
-        "-crf", "20",
-        "-pix_fmt", "yuv420p",
-        outName
-      ]);
-
-      const data = await ffmpeg.readFile(outName);
-      return new Blob([data.buffer], { type: "video/mp4" });
-    }
-
-    async function generateVideo(targetW, targetH) {
-      const used = selected.filter(s => s.use);
-      const topN = used.length;
-
-      // Timings
-      const fps = 30;
-      const frontHoldSec = 1.6;
-      const flipSec = 0.6;
-      const backHoldSec = 1.2;
-      const swipeSec = 0.5;
-
-      const frontHoldFrames = Math.round(frontHoldSec * fps);
-      const flipFrames = Math.max(6, Math.round(flipSec * fps));
-      const backHoldFrames = Math.round(backHoldSec * fps);
-      const swipeFrames = Math.max(6, Math.round(swipeSec * fps));
-
-      // Preload bitmaps for all used cards (both sides)
-      const bitmaps = [];
-      for (let i = 0; i < used.length; i++) {
-        const s = used[i];
-        const handleText = handleForCardIndex(i, topN);
-        const f = await fetchImageBitmap(s.frontUrl);
-        const b = await fetchImageBitmap(s.backUrl);
-        bitmaps.push({ front: f.bmp, back: b.bmp, handleText });
+      function validateRequiredColumns(rows) {
+        const required = ['sale_price', 'front_image', 'back_image', 'set'];
+        const keys = rows.length ? Object.keys(rows[0]) : [];
+        const missing = required.filter((r) => !keys.includes(r));
+        return missing;
       }
 
-      // Build frames
-      const frames = [];
-      for (let i = 0; i < bitmaps.length; i++) {
-        const { front, back, handleText } = bitmaps[i];
-        const frontCanvas = renderSlideCanvas(targetW, targetH, front, handleText);
-        const backCanvas = renderSlideCanvas(targetW, targetH, back, handleText);
+      async function selectTopNWithBackfill(rows, topN) {
+        // Sort by sale_price desc
+        const sorted = [...rows].sort(
+          (a, b) => parsePrice(b.sale_price) - parsePrice(a.sale_price)
+        );
 
-        for (let k = 0; k < frontHoldFrames; k++) addCanvasFrame(frames, frontCanvas);
+        const picked = [];
+        const errors = [];
 
-        const flip = buildFlipFrames(frontCanvas, backCanvas, flipFrames);
-        flip.forEach(c => addCanvasFrame(frames, c));
+        // Try candidates in order until we have topN successful image pairs or run out.
+        for (let i = 0; i < sorted.length && picked.length < topN; i++) {
+          const r = sorted[i];
+          const frontUrl = String(r.front_image || '').trim();
+          const backUrl = String(r.back_image || '').trim();
+          if (!frontUrl || !backUrl) {
+            errors.push({ reason: 'missing url(s)', row: r });
+            continue;
+          }
 
-        for (let k = 0; k < backHoldFrames; k++) addCanvasFrame(frames, backCanvas);
-
-        // Swipe to next card's front (except last)
-        if (i < bitmaps.length - 1) {
-          const nextFrontCanvas = renderSlideCanvas(targetW, targetH, bitmaps[i+1].front, bitmaps[i+1].handleText);
-          const swipe = buildSwipeFrames(backCanvas, nextFrontCanvas, swipeFrames);
-          swipe.forEach(c => addCanvasFrame(frames, c));
+          // Attempt both images now (so we can skip/backfill correctly)
+          try {
+            await fetchImageBitmap(frontUrl);
+            await fetchImageBitmap(backUrl);
+            picked.push({
+              use: true,
+              row: r,
+              frontUrl,
+              backUrl,
+              salePrice: parsePrice(r.sale_price),
+              title: String(r.title || r.card_title || '').trim(),
+              set: String(r.set || '').trim(),
+            });
+          } catch (e) {
+            errors.push({
+              reason: `image fetch failed (${e?.message || e})`,
+              row: r,
+              frontUrl,
+              backUrl,
+            });
+            continue;
+          }
         }
+
+        return { picked, errors };
       }
 
-      // Encode
-      const outName = "out.mp4";
-      const mp4 = await encodeVideoWithFFmpeg(frames, fps, outName);
-      return mp4;
-    }
+      function buildSummaryJSON(originalName) {
+        const topN = Number($('topN').value);
+        const cta = $('cta').value.trim();
+        const handles = getHandles();
+        const used = selected.filter((s) => s.use);
 
-    // ----------------------------
-    // Drop handling
-    // ----------------------------
-    function setupDropZone() {
-      const dz = $("dropZone");
-      dz.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        dz.classList.add("dragover");
-      });
-      dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
-      dz.addEventListener("drop", async (e) => {
-        e.preventDefault();
-        dz.classList.remove("dragover");
-        const file = e.dataTransfer.files?.[0];
-        if (!file) return;
-        await handleDroppedFile(file);
-      });
-    }
+        return {
+          schema: 'social-batch-maker/v1',
+          created_at: new Date().toISOString(),
+          source: { kind: 'csv', name: originalName || '' },
+          settings: {
+            topN,
+            cta,
+            handles,
+            output: { square: true, vertical: true },
+            timings: {
+              fps: 30,
+              frontHoldSec: 1.6,
+              flipSec: 0.6,
+              backHoldSec: 1.2,
+              swipeSec: 0.5,
+            },
+          },
+          derived: { set: selectedSet },
+          selected: used.map((s) => ({
+            sale_price: s.salePrice,
+            set: s.set,
+            title: s.title,
+            year: s.row.year ?? null,
+            brand: s.row.brand ?? null,
+            card_number: s.row.card_number ?? null,
+            front_image: s.frontUrl,
+            back_image: s.backUrl,
+          })),
+        };
+      }
 
-    async function handleDroppedFile(file) {
-      setStatus(`Loading ${file.name}...`);
-      enableButtons(false);
+      function downloadBlob(blob, filename) {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      }
 
-      const name = file.name.toLowerCase();
-      try {
-        if (name.endsWith(".json")) {
-          const txt = await fileToText(file);
-          const summary = JSON.parse(txt);
-          await loadFromSummary(summary);
-          summaryForDownload = summary;
-          setStatus(`Loaded summary. Ready to generate.`);
+      async function blobFromCanvasPNG(canvas) {
+        return await new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 1.0));
+      }
+
+      // ----------------------------
+      // Collage
+      // ----------------------------
+      async function generateCollage(targetW, targetH) {
+        const used = selected.filter((s) => s.use);
+        const tiles = [];
+        for (const s of used) {
+          tiles.push({ url: s.frontUrl });
+          tiles.push({ url: s.backUrl });
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d', { alpha: false });
+        ctx.fillStyle = '#111';
+        ctx.fillRect(0, 0, targetW, targetH);
+
+        const { cols, rows } = bestFitGrid(tiles.length, targetW, targetH);
+        const pad = Math.round(targetW * 0.01);
+        const tileW = Math.floor((targetW - pad * (cols + 1)) / cols);
+        const tileH = Math.floor((targetH - pad * (rows + 1)) / rows);
+
+        // Load logo already decoded
+        for (let i = 0; i < tiles.length; i++) {
+          const col = i % cols;
+          const row = Math.floor(i / cols);
+          const x = pad + col * (tileW + pad);
+          const y = pad + row * (tileH + pad);
+
+          try {
+            const { bmp } = await fetchImageBitmap(tiles[i].url);
+            drawCover(ctx, bmp, x, y, tileW, tileH);
+          } catch {
+            // Should be rare (we already validated), but draw placeholder
+            ctx.fillStyle = '#333';
+            ctx.fillRect(x, y, tileW, tileH);
+            ctx.fillStyle = '#fff';
+            ctx.font = `600 ${Math.round(tileW * 0.08)}px system-ui`;
+            ctx.fillText('IMAGE ERROR', x + 10, y + 30);
+          }
+        }
+
+        drawLogo(ctx, logoImg, targetW, targetH);
+
+        return canvas;
+      }
+
+      // ----------------------------
+      // Video frame rendering (JS) + ffmpeg encode
+      // ----------------------------
+      function renderSlideCanvas(targetW, targetH, bmp, handleText) {
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d', { alpha: false });
+        ctx.fillStyle = '#111';
+        ctx.fillRect(0, 0, targetW, targetH);
+        drawCover(ctx, bmp, 0, 0, targetW, targetH);
+        drawLogo(ctx, logoImg, targetW, targetH);
+        drawHandleOverlay(ctx, handleText, targetW, targetH);
+        return canvas;
+      }
+
+      function addCanvasFrame(frames, canvas) {
+        frames.push(canvas);
+      }
+
+      function buildFlipFrames(frontCanvas, backCanvas, flipFrameCount) {
+        // Faux 3D flip: shrink width to 0 then expand, switching at midpoint.
+        const W = frontCanvas.width;
+        const H = frontCanvas.height;
+        const frames = [];
+        const mid = Math.floor(flipFrameCount / 2);
+
+        for (let i = 0; i < flipFrameCount; i++) {
+          const t = i / (flipFrameCount - 1);
+          // width scale: 1 -> 0 -> 1
+          const scale = i <= mid ? 1 - i / mid : (i - mid) / (flipFrameCount - 1 - mid);
+          const src = i <= mid ? frontCanvas : backCanvas;
+
+          const c = document.createElement('canvas');
+          c.width = W;
+          c.height = H;
+          const ctx = c.getContext('2d', { alpha: false });
+          ctx.fillStyle = '#111';
+          ctx.fillRect(0, 0, W, H);
+
+          const w2 = Math.max(1, Math.round(W * scale));
+          const x = Math.round((W - w2) / 2);
+
+          // Draw squished frame
+          ctx.drawImage(src, 0, 0, W, H, x, 0, w2, H);
+
+          frames.push(c);
+        }
+        return frames;
+      }
+
+      function buildSwipeFrames(fromCanvas, toCanvas, swipeFrameCount) {
+        // Left swipe: current moves left, next enters from right
+        const W = fromCanvas.width;
+        const H = fromCanvas.height;
+        const frames = [];
+        for (let i = 0; i < swipeFrameCount; i++) {
+          const t = i / (swipeFrameCount - 1);
+          const dx = Math.round(W * t);
+
+          const c = document.createElement('canvas');
+          c.width = W;
+          c.height = H;
+          const ctx = c.getContext('2d', { alpha: false });
+          ctx.fillStyle = '#111';
+          ctx.fillRect(0, 0, W, H);
+
+          ctx.drawImage(fromCanvas, -dx, 0);
+          ctx.drawImage(toCanvas, W - dx, 0);
+
+          frames.push(c);
+        }
+        return frames;
+      }
+
+      async function encodeVideoWithFFmpeg(frames, fps, outName) {
+        const ffmpeg = new FFmpeg();
+
+        // Load core from CDN (converted to blob URLs so it works on localhost).
+        // NOTE: This requires serving over http://localhost (not file://).
+        const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
+        const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+        const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+
+        ffmpeg.on('log', ({ message }) => {
+          // Keep status small
+          if (message.includes('frame=') || message.includes('time=')) return;
+        });
+
+        await ffmpeg.load({ coreURL, wasmURL });
+
+        // Write frames as PNGs
+        for (let i = 0; i < frames.length; i++) {
+          const blob = await blobFromCanvasPNG(frames[i]);
+          const name = `frame_${String(i).padStart(5, '0')}.png`;
+          await ffmpeg.writeFile(name, await fetchFile(blob));
+        }
+
+        // Encode
+        // -pix_fmt yuv420p for broad compatibility
+        await ffmpeg.exec([
+          '-framerate',
+          String(fps),
+          '-i',
+          'frame_%05d.png',
+          '-c:v',
+          'libx264',
+          '-preset',
+          'veryfast',
+          '-crf',
+          '20',
+          '-pix_fmt',
+          'yuv420p',
+          outName,
+        ]);
+
+        const data = await ffmpeg.readFile(outName);
+        return new Blob([data.buffer], { type: 'video/mp4' });
+      }
+
+      async function generateVideo(targetW, targetH) {
+        const used = selected.filter((s) => s.use);
+        const topN = used.length;
+
+        // Timings
+        const fps = 30;
+        const frontHoldSec = 1.6;
+        const flipSec = 0.6;
+        const backHoldSec = 1.2;
+        const swipeSec = 0.5;
+
+        const frontHoldFrames = Math.round(frontHoldSec * fps);
+        const flipFrames = Math.max(6, Math.round(flipSec * fps));
+        const backHoldFrames = Math.round(backHoldSec * fps);
+        const swipeFrames = Math.max(6, Math.round(swipeSec * fps));
+
+        // Preload bitmaps for all used cards (both sides)
+        const bitmaps = [];
+        for (let i = 0; i < used.length; i++) {
+          const s = used[i];
+          const handleText = handleForCardIndex(i, topN);
+          const f = await fetchImageBitmap(s.frontUrl);
+          const b = await fetchImageBitmap(s.backUrl);
+          bitmaps.push({ front: f.bmp, back: b.bmp, handleText });
+        }
+
+        // Build frames
+        const frames = [];
+        for (let i = 0; i < bitmaps.length; i++) {
+          const { front, back, handleText } = bitmaps[i];
+          const frontCanvas = renderSlideCanvas(targetW, targetH, front, handleText);
+          const backCanvas = renderSlideCanvas(targetW, targetH, back, handleText);
+
+          for (let k = 0; k < frontHoldFrames; k++) addCanvasFrame(frames, frontCanvas);
+
+          const flip = buildFlipFrames(frontCanvas, backCanvas, flipFrames);
+          flip.forEach((c) => addCanvasFrame(frames, c));
+
+          for (let k = 0; k < backHoldFrames; k++) addCanvasFrame(frames, backCanvas);
+
+          // Swipe to next card's front (except last)
+          if (i < bitmaps.length - 1) {
+            const nextFrontCanvas = renderSlideCanvas(
+              targetW,
+              targetH,
+              bitmaps[i + 1].front,
+              bitmaps[i + 1].handleText
+            );
+            const swipe = buildSwipeFrames(backCanvas, nextFrontCanvas, swipeFrames);
+            swipe.forEach((c) => addCanvasFrame(frames, c));
+          }
+        }
+
+        // Encode
+        const outName = 'out.mp4';
+        const mp4 = await encodeVideoWithFFmpeg(frames, fps, outName);
+        return mp4;
+      }
+
+      // ----------------------------
+      // Drop handling
+      // ----------------------------
+      function setupDropZone() {
+        const dz = $('dropZone');
+        dz.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dz.classList.add('dragover');
+        });
+        dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+        dz.addEventListener('drop', async (e) => {
+          e.preventDefault();
+          dz.classList.remove('dragover');
+          const file = e.dataTransfer.files?.[0];
+          if (!file) return;
+          await handleDroppedFile(file);
+        });
+      }
+
+      async function handleDroppedFile(file) {
+        setStatus(`Loading ${file.name}...`);
+        enableButtons(false);
+
+        const name = file.name.toLowerCase();
+        try {
+          if (name.endsWith('.json')) {
+            const txt = await fileToText(file);
+            const summary = JSON.parse(txt);
+            await loadFromSummary(summary);
+            summaryForDownload = summary;
+            setStatus(`Loaded summary. Ready to generate.`);
+            enableButtons(true);
+            return;
+          }
+
+          if (!name.endsWith('.csv')) {
+            setStatus(`Unsupported file. Drop a .csv or batch-summary.json`);
+            return;
+          }
+
+          const csvText = await fileToText(file);
+          const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+          if (parsed.errors?.length) {
+            setStatus(`CSV parse error: ${parsed.errors[0].message}`);
+            return;
+          }
+
+          allRows = parsed.data || [];
+          if (!allRows.length) {
+            setStatus(`CSV had no rows.`);
+            return;
+          }
+
+          const missing = validateRequiredColumns(allRows);
+          if (missing.length) {
+            setStatus(`Missing required column(s): ${missing.join(', ')}`);
+            return;
+          }
+
+          // Determine set text from all rows
+          selectedSet = mostCommonNonEmpty(allRows.map((r) => r.set));
+          setPills();
+          updatePostText();
+
+          const topN = Math.max(4, Math.min(10, Number($('topN').value) || 6));
+          setStatus(`Selecting top ${topN} by sale_price and validating images...`);
+
+          const { picked, errors } = await selectTopNWithBackfill(allRows, topN);
+          selected = picked;
+
+          // If we couldn't reach N, still proceed with what we got.
+          if (picked.length < topN) {
+            setStatus(
+              `Selected ${picked.length}/${topN}. Some cards were skipped due to image issues.`
+            );
+          } else if (errors.length) {
+            setStatus(
+              `Selected ${picked.length}. Skipped ${errors.length} rows due to missing/bad images.`
+            );
+          } else {
+            setStatus(`Selected ${picked.length}. Ready to generate.`);
+          }
+
+          renderTable();
+          setPills();
+          updatePostText();
+
+          summaryForDownload = buildSummaryJSON(file.name);
+
           enableButtons(true);
-          return;
+        } catch (e) {
+          setStatus(`Error: ${e?.message || e}`);
+        }
+      }
+
+      async function loadFromSummary(summary) {
+        if (!summary || summary.schema !== 'social-batch-maker/v1') {
+          throw new Error('Unknown summary format.');
         }
 
-        if (!name.endsWith(".csv")) {
-          setStatus(`Unsupported file. Drop a .csv or batch-summary.json`);
-          return;
-        }
+        // Apply settings (but still editable)
+        $('topN').value = String(summary.settings?.topN ?? $('topN').value);
+        $('cta').value = summary.settings?.cta ?? $('cta').value;
 
-        const csvText = await fileToText(file);
-        const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
-        if (parsed.errors?.length) {
-          setStatus(`CSV parse error: ${parsed.errors[0].message}`);
-          return;
-        }
+        const h = summary.settings?.handles || {};
+        $('xHandle').value = h.x ?? $('xHandle').value;
+        $('igHandle').value = h.ig ?? $('igHandle').value;
+        $('fbHandle').value = h.fb ?? $('fbHandle').value;
+        $('ytHandle').value = h.yt ?? $('ytHandle').value;
+        $('ttHandle').value = h.tt ?? $('ttHandle').value;
 
-        allRows = parsed.data || [];
-        if (!allRows.length) {
-          setStatus(`CSV had no rows.`);
-          return;
-        }
+        saveSettingsToLocalStorage();
 
-        const missing = validateRequiredColumns(allRows);
-        if (missing.length) {
-          setStatus(`Missing required column(s): ${missing.join(", ")}`);
-          return;
-        }
-
-        // Determine set text from all rows
-        selectedSet = mostCommonNonEmpty(allRows.map(r => r.set));
-        setPills();
-        updatePostText();
-
-        const topN = Math.max(4, Math.min(10, Number($("topN").value) || 6));
-        setStatus(`Selecting top ${topN} by sale_price and validating images...`);
-
-        const { picked, errors } = await selectTopNWithBackfill(allRows, topN);
-        selected = picked;
-
-        // If we couldn't reach N, still proceed with what we got.
-        if (picked.length < topN) {
-          setStatus(`Selected ${picked.length}/${topN}. Some cards were skipped due to image issues.`);
-        } else if (errors.length) {
-          setStatus(`Selected ${picked.length}. Skipped ${errors.length} rows due to missing/bad images.`);
-        } else {
-          setStatus(`Selected ${picked.length}. Ready to generate.`);
-        }
+        selectedSet = summary.derived?.set || '';
+        selected = (summary.selected || []).map((s) => ({
+          use: true,
+          row: s,
+          frontUrl: s.front_image,
+          backUrl: s.back_image,
+          salePrice: Number(s.sale_price) || 0,
+          title: s.title || '',
+          set: s.set || '',
+        }));
 
         renderTable();
         setPills();
         updatePostText();
-
-        summaryForDownload = buildSummaryJSON(file.name);
-
-        enableButtons(true);
-      } catch (e) {
-        setStatus(`Error: ${e?.message || e}`);
-      }
-    }
-
-    async function loadFromSummary(summary) {
-      if (!summary || summary.schema !== "social-batch-maker/v1") {
-        throw new Error("Unknown summary format.");
       }
 
-      // Apply settings (but still editable)
-      $("topN").value = String(summary.settings?.topN ?? $("topN").value);
-      $("cta").value = summary.settings?.cta ?? $("cta").value;
+      // ----------------------------
+      // Button handlers
+      // ----------------------------
+      async function doGenerateCollages() {
+        saveSettingsToLocalStorage();
+        await loadLogoFromLocalStorage();
 
-      const h = summary.settings?.handles || {};
-      $("xHandle").value = h.x ?? $("xHandle").value;
-      $("igHandle").value = h.ig ?? $("igHandle").value;
-      $("fbHandle").value = h.fb ?? $("fbHandle").value;
-      $("ytHandle").value = h.yt ?? $("ytHandle").value;
-      $("ttHandle").value = h.tt ?? $("ttHandle").value;
+        const usedCount = selected.filter((s) => s.use).length;
+        if (!usedCount) {
+          setStatus('No cards selected.');
+          return;
+        }
 
-      saveSettingsToLocalStorage();
+        setStatus('Generating square collage...');
+        const c1 = await generateCollage(1080, 1080);
+        const b1 = await blobFromCanvasPNG(c1);
 
-      selectedSet = summary.derived?.set || "";
-      selected = (summary.selected || []).map(s => ({
-        use: true,
-        row: s,
-        frontUrl: s.front_image,
-        backUrl: s.back_image,
-        salePrice: Number(s.sale_price) || 0,
-        title: s.title || "",
-        set: s.set || ""
-      }));
+        setStatus('Generating vertical collage...');
+        const c2 = await generateCollage(1080, 1920);
+        const b2 = await blobFromCanvasPNG(c2);
 
-      renderTable();
-      setPills();
-      updatePostText();
-    }
+        const setPart = sanitizeFilenamePart(selectedSet);
+        const topN = usedCount;
+        downloadBlob(b1, `${todayISO()}_${setPart}_top${topN}_square.png`);
+        downloadBlob(b2, `${todayISO()}_${setPart}_top${topN}_vertical.png`);
 
-    // ----------------------------
-    // Button handlers
-    // ----------------------------
-    async function doGenerateCollages() {
-      saveSettingsToLocalStorage();
-      await loadLogoFromLocalStorage();
+        setStatus('Collages downloaded.');
+      }
 
-      const usedCount = selected.filter(s => s.use).length;
-      if (!usedCount) { setStatus("No cards selected."); return; }
+      async function doGenerateVideos() {
+        saveSettingsToLocalStorage();
+        await loadLogoFromLocalStorage();
 
-      setStatus("Generating square collage...");
-      const c1 = await generateCollage(1080, 1080);
-      const b1 = await blobFromCanvasPNG(c1);
+        const usedCount = selected.filter((s) => s.use).length;
+        if (!usedCount) {
+          setStatus('No cards selected.');
+          return;
+        }
 
-      setStatus("Generating vertical collage...");
-      const c2 = await generateCollage(1080, 1920);
-      const b2 = await blobFromCanvasPNG(c2);
+        const setPart = sanitizeFilenamePart(selectedSet);
+        const topN = usedCount;
 
-      const setPart = sanitizeFilenamePart(selectedSet);
-      const topN = usedCount;
-      downloadBlob(b1, `${todayISO()}_${setPart}_top${topN}_square.png`);
-      downloadBlob(b2, `${todayISO()}_${setPart}_top${topN}_vertical.png`);
+        setStatus('Generating square video (this may take a while)...');
+        const v1 = await generateVideo(1080, 1080);
+        downloadBlob(v1, `${todayISO()}_${setPart}_top${topN}_square.mp4`);
 
-      setStatus("Collages downloaded.");
-    }
+        setStatus('Generating vertical video (this may take a while)...');
+        const v2 = await generateVideo(1080, 1920);
+        downloadBlob(v2, `${todayISO()}_${setPart}_top${topN}_vertical.mp4`);
 
-    async function doGenerateVideos() {
-      saveSettingsToLocalStorage();
-      await loadLogoFromLocalStorage();
+        setStatus('Videos downloaded.');
+      }
 
-      const usedCount = selected.filter(s => s.use).length;
-      if (!usedCount) { setStatus("No cards selected."); return; }
+      function doCopyText() {
+        const txt = $('postText').textContent || '';
+        navigator.clipboard.writeText(txt);
+        setStatus('Post text copied to clipboard.');
+      }
 
-      const setPart = sanitizeFilenamePart(selectedSet);
-      const topN = usedCount;
+      function doDownloadSummary() {
+        const summary = summaryForDownload || buildSummaryJSON('');
+        const blob = new Blob([JSON.stringify(summary, null, 2)], { type: 'application/json' });
+        downloadBlob(blob, `batch-summary_${todayISO()}.json`);
+        setStatus('Summary downloaded.');
+      }
 
-      setStatus("Generating square video (this may take a while)...");
-      const v1 = await generateVideo(1080, 1080);
-      downloadBlob(v1, `${todayISO()}_${setPart}_top${topN}_square.mp4`);
-
-      setStatus("Generating vertical video (this may take a while)...");
-      const v2 = await generateVideo(1080, 1920);
-      downloadBlob(v2, `${todayISO()}_${setPart}_top${topN}_vertical.mp4`);
-
-      setStatus("Videos downloaded.");
-    }
-
-    function doCopyText() {
-      const txt = $("postText").textContent || "";
-      navigator.clipboard.writeText(txt);
-      setStatus("Post text copied to clipboard.");
-    }
-
-    function doDownloadSummary() {
-      const summary = summaryForDownload || buildSummaryJSON("");
-      const blob = new Blob([JSON.stringify(summary, null, 2)], { type: "application/json" });
-      downloadBlob(blob, `batch-summary_${todayISO()}.json`);
-      setStatus("Summary downloaded.");
-    }
-
-    // ----------------------------
-    // Init
-    // ----------------------------
-    function wireInputsToLocalStorage() {
-      ["topN","cta","company","xHandle","igHandle","fbHandle","ytHandle","ttHandle"].forEach(id => {
-        $(id).addEventListener("input", () => {
-          saveSettingsToLocalStorage();
-          updatePostText();
+      // ----------------------------
+      // Init
+      // ----------------------------
+      function wireInputsToLocalStorage() {
+        [
+          'topN',
+          'cta',
+          'company',
+          'xHandle',
+          'igHandle',
+          'fbHandle',
+          'ytHandle',
+          'ttHandle',
+        ].forEach((id) => {
+          $(id).addEventListener('input', () => {
+            saveSettingsToLocalStorage();
+            updatePostText();
+          });
         });
-      });
 
-      $("logoFile").addEventListener("change", async () => {
-        const f = $("logoFile").files?.[0];
-        if (!f) return;
-        const dataUrl = await fileToDataURL(f);
-        localStorage.setItem(LS_KEYS.logo, dataUrl);
-        logoImg = await dataUrlToImage(dataUrl);
-        setStatus("Logo saved.");
-      });
-    }
-
-    $("btnCollage").addEventListener("click", async () => {
-      try { enableButtons(false); await doGenerateCollages(); }
-      catch (e) { setStatus(`Error: ${e?.message || e}`); }
-      finally { enableButtons(true); }
-    });
-
-    $("btnVideo").addEventListener("click", async () => {
-      try { enableButtons(false); await doGenerateVideos(); }
-      catch (e) { setStatus(`Error: ${e?.message || e}`); }
-      finally { enableButtons(true); }
-    });
-
-    $("btnAll").addEventListener("click", async () => {
-      try {
-        enableButtons(false);
-        await doGenerateCollages();
-        await doGenerateVideos();
-        setStatus("All assets generated.");
-      } catch (e) {
-        setStatus(`Error: ${e?.message || e}`);
-      } finally {
-        enableButtons(true);
+        $('logoFile').addEventListener('change', async () => {
+          const f = $('logoFile').files?.[0];
+          if (!f) return;
+          const dataUrl = await fileToDataURL(f);
+          localStorage.setItem(LS_KEYS.logo, dataUrl);
+          logoImg = await dataUrlToImage(dataUrl);
+          setStatus('Logo saved.');
+        });
       }
-    });
 
-    $("btnCopyText").addEventListener("click", doCopyText);
-    $("btnDownloadSummary").addEventListener("click", doDownloadSummary);
+      $('btnCollage').addEventListener('click', async () => {
+        try {
+          enableButtons(false);
+          await doGenerateCollages();
+        } catch (e) {
+          setStatus(`Error: ${e?.message || e}`);
+        } finally {
+          enableButtons(true);
+        }
+      });
 
-    // Setup
-    loadSettingsFromLocalStorage();
-    await loadLogoFromLocalStorage();
-    wireInputsToLocalStorage();
-    setupDropZone();
-    updatePostText();
-    updateFooter();
-  </script>
-</body>
+      $('btnVideo').addEventListener('click', async () => {
+        try {
+          enableButtons(false);
+          await doGenerateVideos();
+        } catch (e) {
+          setStatus(`Error: ${e?.message || e}`);
+        } finally {
+          enableButtons(true);
+        }
+      });
+
+      $('btnAll').addEventListener('click', async () => {
+        try {
+          enableButtons(false);
+          await doGenerateCollages();
+          await doGenerateVideos();
+          setStatus('All assets generated.');
+        } catch (e) {
+          setStatus(`Error: ${e?.message || e}`);
+        } finally {
+          enableButtons(true);
+        }
+      });
+
+      $('btnCopyText').addEventListener('click', doCopyText);
+      $('btnDownloadSummary').addEventListener('click', doDownloadSummary);
+
+      // Setup
+      loadSettingsFromLocalStorage();
+      await loadLogoFromLocalStorage();
+      wireInputsToLocalStorage();
+      setupDropZone();
+      updatePostText();
+      updateFooter();
+    </script>
+  </body>
 </html>
