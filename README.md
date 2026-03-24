@@ -26,7 +26,7 @@ If you are new to GitHub, think of this page as a shared folder of files.
 - Watch [this presentation](https://district.net/livestream/40a3ce20-d2c7-4679-87ad-ca7c80b7b61a?replay=true) I gave that has over an hour of tips and tricks as well as a live demo of some of the tools presented here.
 - Read this file (`README.md`) first for the overall workflow.
 - Read `GenAI.md` for simple AI-assisted automation guidance.
-- Read `TemperMonkey.md` for browser script setup and usage.
+- Read `Tampermonkey.md` for browser script setup and usage.
 - Check out [Tools-and-Supplies.md](Tools-and-Supplies.md) for recommended hardware, platforms, and supplies to optimize your card scanning and selling workflow.
 
 ## rotate.py
@@ -153,14 +153,14 @@ Before you convert, you'll want to modify anything in the batch to set up defual
 
 This workflow processes the physical scans and converts the associated metadata into the required format for distribution.
 
-## TamperMonkey Automations
+## Tampermonkey Automations
 
-This repo also includes TamperMonkey scripts in `tm/` to speed up browser-side eBay/Gmail workflows (copying order data and opening quick District searches).
+This repo also includes Tampermonkey scripts in `tm/` to speed up browser-side eBay/Gmail workflows (copying order data and opening quick District searches).
 
-See [TemperMonkey.md](TemperMonkey.md) for installation instructions and usage details for each script.
+See [Tampermonkey.md](Tampermonkey.md) for installation instructions and usage details for each script.
 
 ## Automation Using Generative AI
 
 You can also use generative AI tools to quickly create custom automations and small helper scripts, even if you are not a programmer.
 
-See [GenAI.md](GenAI.md) for a simple guide on using ChatGPT or Claude to build helper scripts and TamperMonkey automations.
+See [GenAI.md](GenAI.md) for a simple guide on using ChatGPT or Claude to build helper scripts and Tampermonkey automations.

@@ -1,30 +1,30 @@
-# TamperMonkey Automations
+# Tampermonkey Automations
 
 This project includes browser automation helpers in `tm/` for eBay and Gmail workflows.
 
-## Install TamperMonkey
+## Install Tampermonkey
 
 1. Visit the official site: https://www.tampermonkey.net/
 2. Install the extension for your browser (Chrome, Edge, Firefox, Safari, or Opera).
-3. Open the TamperMonkey dashboard in your browser.
+3. Open the Tampermonkey dashboard in your browser.
 4. Create a new userscript, paste one of the scripts from `tm/`, and save.
 
 ## Use a Script from ChatGPT or Claude
 
 If you generated a script with ChatGPT or Claude, you can load and test it in a few quick steps:
 
-1. In TamperMonkey, click **Create a new script**.
+1. In Tampermonkey, click **Create a new script**.
 2. Delete the default starter code in the editor.
 3. Paste the full script you got from ChatGPT or Claude.
 4. Click **File → Save** (or press **Command + S**).
-5. Make sure the script is **Enabled** in the TamperMonkey dashboard.
+5. Make sure the script is **Enabled** in the Tampermonkey dashboard.
 6. Open the website the script is meant for, then refresh the page.
 7. Test the script action (for example, click its button if it adds one).
 
 If nothing happens, check these basics:
 
 - The script has the correct `@match` URL for the page you are on.
-- The script is enabled in TamperMonkey.
+- The script is enabled in Tampermonkey.
 - You refreshed the page after saving.
 
 ## Scripts in `tm/`
@@ -44,7 +44,7 @@ If nothing happens, check these basics:
     ![Example usage](img/tm-example-1.png)
 
 - **How to use**:
-  1. Enable the script in TamperMonkey.
+  1. Enable the script in Tampermonkey.
   2. Open an eBay orders page or Gmail message.
   3. Hover a word in a supported text area.
   4. Click **District** in the popup to open a search in a new tab.
@@ -63,7 +63,7 @@ If nothing happens, check these basics:
   - Copies rows as tab-separated values for easy paste into Google Sheets.
   - Updates automatically as page content changes.
 - **How to use**:
-  1. Enable the script in TamperMonkey.
+  1. Enable the script in Tampermonkey.
   2. Open eBay Bulk Shipping (`/ship/`) with orders loaded.
   3. Click the **COPY N ROW(S)** button.
   4. Paste into Sheets or CSV tooling; columns map to order number, title, and price.
@@ -71,4 +71,4 @@ If nothing happens, check these basics:
 ## Notes
 
 - If a script shows an error state, refresh the page and make sure matching page elements are loaded.
-- TamperMonkey script matching is URL-based; scripts only run on the `@match` URLs declared at the top of each file.
+- Tampermonkey script matching is URL-based; scripts only run on the `@match` URLs declared at the top of each file.

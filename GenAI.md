@@ -8,8 +8,9 @@ This page shows a simple way to use AI tools to build custom automations and hel
 - [Claude](https://claude.ai)
 
 Both tools can help you:
+
 - Write small helper scripts
-- Create TamperMonkey scripts for browser tasks
+- Create Tampermonkey scripts for browser tasks
 - Improve and fix scripts when something is not working
 
 ## Simple Process (Non-Technical)
@@ -30,9 +31,10 @@ You want to quickly review sold-item market data for a sports card and avoid man
 
 ### Decision
 
-Use a TamperMonkey script that adds one button to the eBay sold listings page after the page loads.
+Use a Tampermonkey script that adds one button to the eBay sold listings page after the page loads.
 
 When clicked, the button should:
+
 - Read sold listings on the page
 - Pull out sale price, shipping, and date sold
 - Show a popup/modal with:
@@ -52,7 +54,7 @@ When clicked, the button should:
 5. Open [Claude](https://claude.ai).
 6. Paste the source, then ask Claude to:
    - Identify fields like price, shipping, and date sold
-   - Write a TamperMonkey script that adds a single button after page load
+   - Write a Tampermonkey script that adds a single button after page load
    - Show a modal popup with low/high/mean/average sold prices
 
 ## Example Prompt for Claude
@@ -67,7 +69,7 @@ Please do the following:
    - sale price
    - shipping cost
    - date sold
-2) Write a complete TamperMonkey userscript that runs on eBay sold listing pages.
+2) Write a complete Tampermonkey userscript that runs on eBay sold listing pages.
 3) Wait until the page is fully loaded, then place one button on the page called "Analyze Sold Data".
 4) When I click the button, parse all visible sold listings and calculate:
    - low sold price
@@ -78,7 +80,7 @@ Please do the following:
 6) Keep the script easy to edit, and add clear labels in the results.
 7) If shipping exists, include a second set of stats for total price (sold price + shipping).
 
-After the script, provide quick install steps for TamperMonkey and 3 troubleshooting tips.
+After the script, provide quick install steps for Tampermonkey and 3 troubleshooting tips.
 
 Here is the page source:
 [PASTE PAGE SOURCE HERE]
