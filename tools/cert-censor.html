@@ -98,9 +98,9 @@
   <div class="app">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
       <h1>PSA Cert Censor</h1>
-      <div style="font-size:24px; text-align:right;">
+      <div style="font-size:14px; text-align:right;">
         Brought to you by Card Warehouse. <b><a href="https://district.net/u/cwbreaks" target="_blank">Shop here</a></b>.<br>New buyers get $5 off with code: <b>CWBREA64</b><br>
-        Get this script at https://github.com/joetech/cardsales/blob/main/tools/cert-censor.html
+        Get this script <a href="https://github.com/joetech/cardsales/blob/main/tools/cert-censor.html" target="_blank">here</a>.
       </div>
     </div>
 
@@ -127,6 +127,11 @@
         </select>
         <button id="applyBtn">Apply black rectangle</button>
         <button id="resetBtn" type="button">Reset box</button>
+      </div>
+
+      <div>
+        <label for="nameInput">Name in censor box</label>
+        <input id="nameInput" type="text" placeholder="Your name" />
       </div>
 
       <div class="note">
@@ -174,6 +179,7 @@
     const yInput = document.getElementById('yInput');
     const wInput = document.getElementById('wInput');
     const hInput = document.getElementById('hInput');
+    const nameInput = document.getElementById('nameInput');
 
     let originalImage = null;
     let activeBox = null;
@@ -216,7 +222,7 @@
       if (originalImage) drawCensoredImage();
     });
 
-    [xInput, yInput, wInput, hInput].forEach(input => {
+    [xInput, yInput, wInput, hInput, nameInput].forEach(input => {
       input.addEventListener('input', () => {
         if (!originalImage) return;
         readBoxFromInputs();
@@ -288,6 +294,16 @@
 
       ctx.fillStyle = 'black';
       ctx.fillRect(x, y, w, h);
+
+      const name = nameInput.value?.trim();
+      if (name) {
+        ctx.fillStyle = '#ccc';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const fontSize = Math.floor(h * 0.6);
+        ctx.font = `${fontSize}px sans-serif`;
+        ctx.fillText(name, x + w / 2, y + h / 2);
+      }
     }
   </script>
 </body>
