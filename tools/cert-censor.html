@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PSA Cert Censor</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 24px;
+      background: #f5f5f5;
+      color: #111;
+    }
+
+    .app {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    h1 { margin-top: 0; }
+
+    .controls {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    input, select, button {
+      font: inherit;
+      padding: 8px;
+    }
+
+    input[type="url"] {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .fine-tune {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 10px;
+      max-width: 720px;
+    }
+
+    .fine-tune input {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+    }
+
+    canvas {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      border: 1px solid #ccc;
+      background: #eee;
+      margin-top: 16px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    #downloadBtn {
+      display: none;
+      margin-top: 12px;
+    }
+
+    .note {
+      color: #555;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+      <h1>PSA Cert Censor</h1>
+      <div style="font-size:24px; text-align:right;">
+        Brought to you by Card Warehouse. <b><a href="https://district.net/u/cwbreaks" target="_blank">Shop here</a></b>.<br>New buyers get $5 off with code: <b>CWBREA64</b>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div>
+        <label for="fileInput">Upload image</label>
+        <input id="fileInput" type="file" accept="image/*" />
+      </div>
+
+      <div>
+        <label for="urlInput">Or image URL</label>
+        <div class="row">
+          <input id="urlInput" type="url" placeholder="https://example.com/card.jpg" />
+          <button id="loadUrlBtn">Load URL</button>
+        </div>
+        <div class="note">Some image hosts block browser loading because of CORS.</div>
+      </div>
+
+      <div class="row">
+        <label for="sideSelect">Image side</label>
+        <select id="sideSelect">
+          <option value="front">Front</option>
+          <option value="back">Back</option>
+        </select>
+        <button id="applyBtn">Apply black rectangle</button>
+        <button id="resetBtn" type="button">Reset box</button>
+      </div>
+
+      <div class="note">
+        The box is calculated from image dimensions. Use the fine-tune fields if a scan/crop is slightly different.
+      </div>
+
+      <div class="fine-tune">
+        <div>
+          <label for="xInput">X %</label>
+          <input id="xInput" type="number" step="0.1" />
+        </div>
+        <div>
+          <label for="yInput">Y %</label>
+          <input id="yInput" type="number" step="0.1" />
+        </div>
+        <div>
+          <label for="wInput">Width %</label>
+          <input id="wInput" type="number" step="0.1" />
+        </div>
+        <div>
+          <label for="hInput">Height %</label>
+          <input id="hInput" type="number" step="0.1" />
+        </div>
+      </div>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="canvas"></canvas>
+    </div>
+    <button id="downloadBtn">Download censored image</button>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const urlInput = document.getElementById('urlInput');
+    const loadUrlBtn = document.getElementById('loadUrlBtn');
+    const sideSelect = document.getElementById('sideSelect');
+    const applyBtn = document.getElementById('applyBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const xInput = document.getElementById('xInput');
+    const yInput = document.getElementById('yInput');
+    const wInput = document.getElementById('wInput');
+    const hInput = document.getElementById('hInput');
+
+    let originalImage = null;
+    let activeBox = null;
+
+    // Percentages of full image size. These scale with any image dimensions.
+    // Front height reduced so it covers only the certification number, not the grade.
+    const defaultCertBoxes = {
+      front: { x: 66.4, y: 14.0, w: 23.0, h: 2.3 },
+      back:  { x: 65.0, y: 16.4,  w: 25.0, h: 2.4 }
+    };
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => loadImage(reader.result);
+      reader.readAsDataURL(file);
+    });
+
+    loadUrlBtn.addEventListener('click', () => {
+      const url = urlInput.value.trim();
+      if (!url) return;
+      loadImage(url, true);
+    });
+
+    applyBtn.addEventListener('click', () => {
+      if (!originalImage) return;
+      readBoxFromInputs();
+      drawCensoredImage();
+    });
+
+    resetBtn.addEventListener('click', () => {
+      setBoxFromDefaults();
+      drawCensoredImage();
+    });
+
+    sideSelect.addEventListener('change', () => {
+      setBoxFromDefaults();
+      if (originalImage) drawCensoredImage();
+    });
+
+    [xInput, yInput, wInput, hInput].forEach(input => {
+      input.addEventListener('input', () => {
+        if (!originalImage) return;
+        readBoxFromInputs();
+        drawCensoredImage();
+      });
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = 'psa-cert-censored.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+
+    setBoxFromDefaults();
+
+    function loadImage(src, isUrl = false) {
+      const img = new Image();
+
+      if (isUrl) {
+        img.crossOrigin = 'anonymous';
+      }
+
+      img.onload = () => {
+        originalImage = img;
+        setBoxFromDefaults();
+        drawCensoredImage();
+        downloadBtn.style.display = 'inline-block';
+      };
+
+      img.onerror = () => {
+        alert('Could not load image. If this was a URL, the image host may be blocking browser access.');
+      };
+
+      img.src = src;
+    }
+
+    function setBoxFromDefaults() {
+      activeBox = { ...defaultCertBoxes[sideSelect.value] };
+      writeBoxToInputs();
+    }
+
+    function writeBoxToInputs() {
+      xInput.value = activeBox.x;
+      yInput.value = activeBox.y;
+      wInput.value = activeBox.w;
+      hInput.value = activeBox.h;
+    }
+
+    function readBoxFromInputs() {
+      activeBox = {
+        x: Number(xInput.value),
+        y: Number(yInput.value),
+        w: Number(wInput.value),
+        h: Number(hInput.value)
+      };
+    }
+
+    function drawCensoredImage() {
+      canvas.width = originalImage.naturalWidth;
+      canvas.height = originalImage.naturalHeight;
+
+      ctx.drawImage(originalImage, 0, 0);
+
+      const x = Math.round((activeBox.x / 100) * canvas.width);
+      const y = Math.round((activeBox.y / 100) * canvas.height);
+      const w = Math.round((activeBox.w / 100) * canvas.width);
+      const h = Math.round((activeBox.h / 100) * canvas.height);
+
+      ctx.fillStyle = 'black';
+      ctx.fillRect(x, y, w, h);
+    }
+  </script>
+</body>
+</html>
