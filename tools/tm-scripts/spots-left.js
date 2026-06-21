@@ -11,6 +11,7 @@
 
 // DISCLAIMER:
 // This was created with Claude. I am not responsible for anything that happens as a result of your use.
+// https://github.com/joetech/cardsales/edit/main/tools/tm-scripts/spots-left.js
 
 (function () {
   'use strict';
@@ -91,6 +92,110 @@
     } catch (e) {
       console.error('[MBB Panel] Error selecting variant:', e);
     }
+  }
+
+  // ─── Find the main product image URL ──────────────────────────────────────
+  function getProductImageUrl() {
+    try {
+      const raw = document.getElementById('__NEXT_DATA__')?.textContent;
+      if (!raw) return null;
+      const json = JSON.parse(raw);
+      const medias = json?.props?.pageProps?.ssr?.product?.productMedias ?? [];
+      return medias[0]?.mediaUrl ?? null;
+    } catch (e) {
+      console.error('[MBB Panel] Failed to get product image:', e);
+      return null;
+    }
+  }
+
+  // ─── Load an image, trying CORS first, falling back to no-CORS ───────────
+  function loadImage(url) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('Image failed to load'));
+      img.src = url;
+    });
+  }
+
+  // ─── Draw the export image onto a canvas ──────────────────────────────────
+  // Returns a Promise<HTMLCanvasElement>
+  async function buildExportCanvas(variants, discount, discountedPriceFn, formatPriceFn) {
+    const SIZE = 1080;
+    const canvas = document.createElement('canvas');
+    canvas.width = SIZE;
+    canvas.height = SIZE;
+    const ctx = canvas.getContext('2d');
+
+    // Background: try to draw the product image (cover-fit, square).
+    const imgUrl = getProductImageUrl();
+    let imageDrawn = false;
+    if (imgUrl) {
+      try {
+        const img = await loadImage(imgUrl);
+        // Cover-fit square crop.
+        const side = Math.min(img.width, img.height);
+        const sx = (img.width - side) / 2;
+        const sy = (img.height - side) / 2;
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, SIZE, SIZE);
+        imageDrawn = true;
+      } catch (e) {
+        console.warn('[MBB Panel] Could not load product image for export, using fallback background:', e);
+      }
+    }
+    if (!imageDrawn) {
+      ctx.fillStyle = '#222';
+      ctx.fillRect(0, 0, SIZE, SIZE);
+    }
+
+    // Bottom 80% dark overlay (50% opaque black) for list legibility.
+    const listTop = SIZE * 0.20;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(0, listTop, SIZE, SIZE - listTop);
+
+    // Render list text.
+    const padding = 50;
+    const innerWidth = SIZE - padding * 2;
+    const rowCount = variants.length;
+    const availableHeight = (SIZE - listTop) - padding * 2;
+    const rowHeight = Math.min(64, availableHeight / Math.max(rowCount, 1));
+    const fontSize = Math.max(18, Math.min(30, rowHeight * 0.42));
+
+    ctx.textBaseline = 'middle';
+
+    variants.forEach((v, i) => {
+      const finalPrice = discountedPriceFn(v.price, discount);
+      const y = listTop + padding + rowHeight * i + rowHeight / 2;
+
+      // Team name (left aligned)
+      ctx.font = `600 ${fontSize}px system-ui, -apple-system, sans-serif`;
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'left';
+      ctx.fillText(v.name, padding, y, innerWidth * 0.6);
+
+      // Price (right aligned)
+      ctx.font = `700 ${fontSize}px system-ui, -apple-system, sans-serif`;
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'right';
+      ctx.fillText(formatPriceFn(finalPrice), padding + innerWidth, y);
+
+      // Thin separator line (except after last row)
+      if (i < rowCount - 1) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padding, y + rowHeight / 2);
+        ctx.lineTo(padding + innerWidth, y + rowHeight / 2);
+        ctx.stroke();
+      }
+    });
+
+    return canvas;
+  }
+
+  function canvasToBlob(canvas) {
+    return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
   }
 
   // ─── Build the panel ──────────────────────────────────────────────────────
@@ -204,6 +309,23 @@
       fontSize: '12px',
     });
     body.appendChild(copyAllBtn);
+
+    // Copy/Download as image button
+    const imageBtn = document.createElement('button');
+    imageBtn.textContent = '🖼️ Copy & Download Image';
+    Object.assign(imageBtn.style, {
+      width: '100%',
+      padding: '5px',
+      marginBottom: '8px',
+      background: '#fff',
+      color: '#111',
+      border: '1px solid #111',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      fontWeight: '600',
+      fontSize: '12px',
+    });
+    body.appendChild(imageBtn);
 
     // Variant list
     const list = document.createElement('div');
@@ -325,6 +447,49 @@
         copyAllBtn.textContent = '✓ Copied!';
         setTimeout(() => copyAllBtn.textContent = orig, 1500);
       });
+    });
+
+    imageBtn.addEventListener('click', async () => {
+      const orig = imageBtn.textContent;
+      imageBtn.disabled = true;
+      imageBtn.textContent = 'Generating...';
+
+      try {
+        const discount = getDiscount();
+        const canvas = await buildExportCanvas(variants, discount, discountedPrice, formatPrice);
+        const blob = await canvasToBlob(canvas);
+
+        if (!blob) throw new Error('Failed to create image blob');
+
+        // Download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'mbb-variant-prices.png';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+
+        // Copy to clipboard (best effort — may fail due to canvas tainting or browser support)
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+          ]);
+          imageBtn.textContent = '✓ Copied & Downloaded!';
+        } catch (clipErr) {
+          console.warn('[MBB Panel] Clipboard copy failed (downloaded only):', clipErr);
+          imageBtn.textContent = '✓ Downloaded (copy failed)';
+        }
+      } catch (e) {
+        console.error('[MBB Panel] Image export failed:', e);
+        imageBtn.textContent = '✕ Failed — see console';
+      } finally {
+        setTimeout(() => {
+          imageBtn.textContent = orig;
+          imageBtn.disabled = false;
+        }, 2000);
+      }
     });
 
     // ── Discount input events ──
