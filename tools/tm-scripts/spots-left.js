@@ -232,7 +232,7 @@
     });
 
     const title = document.createElement('span');
-    title.textContent = '🏈 Variants';
+    title.textContent = 'Variants';
     Object.assign(title.style, { fontWeight: '700', fontSize: '13px' });
 
     const collapseBtn = document.createElement('span');
