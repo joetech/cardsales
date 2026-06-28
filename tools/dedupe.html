@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CSV Product Variant Deduper</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1f2937; background: #f3f4f6; }
+    body { margin: 0; padding: 32px; }
+    main { max-width: 760px; margin: 0 auto; background: white; border-radius: 16px; padding: 28px; box-shadow: 0 10px 30px rgba(0,0,0,.08); }
+    h1 { margin: 0 0 8px; font-size: 1.65rem; }
+    p { line-height: 1.5; }
+    .drop-zone { margin-top: 22px; border: 3px dashed #9ca3af; border-radius: 14px; padding: 42px 24px; text-align: center; background: #fafafa; cursor: pointer; transition: border-color .15s, background .15s; }
+    .drop-zone.dragover { border-color: #2563eb; background: #eff6ff; }
+    .drop-zone strong { display: block; font-size: 1.1rem; margin-bottom: 8px; }
+    input[type=file] { display: none; }
+    .status { margin-top: 18px; padding: 12px 14px; border-radius: 10px; background: #f9fafb; white-space: pre-wrap; }
+    .error { background: #fef2f2; color: #991b1b; }
+    .success { background: #ecfdf5; color: #065f46; }
+    code { background: #f3f4f6; padding: 2px 5px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>CSV Product Variant Deduper</h1>
+    <p>
+      Drop a CSV file here. Rows with the exact same <code>Product Name</code> will keep all rows,
+      copy each row's <code>Product Images</code> value into <code>Variant Images</code>, and fill
+      <code>Variant Name</code> with <code>Card 1</code>, <code>Card 2</code>, etc.
+    </p>
+
+    <div id="dropZone" class="drop-zone" role="button" tabindex="0">
+      <strong>Drag your CSV file here</strong>
+      or click to choose a file
+      <input id="fileInput" type="file" accept=".csv,text/csv" />
+    </div>
+
+    <div id="status" class="status">No file selected.</div>
+  </main>
+
+  <script>
+    const REQUIRED_COLUMNS = [
+      "Product Name",
+      "Product Images",
+      "Variant Images",
+      "Variant Name"
+    ];
+
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput");
+    const statusBox = document.getElementById("status");
+
+    function setStatus(message, type = "") {
+      statusBox.className = "status" + (type ? " " + type : "");
+      statusBox.textContent = message;
+    }
+
+    function parseCsv(text) {
+      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+
+      const rows = [];
+      let row = [];
+      let field = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const next = text[i + 1];
+
+        if (inQuotes) {
+          if (char === '"' && next === '"') {
+            field += '"';
+            i++;
+          } else if (char === '"') {
+            inQuotes = false;
+          } else {
+            field += char;
+          }
+        } else {
+          if (char === '"') {
+            inQuotes = true;
+          } else if (char === ',') {
+            row.push(field);
+            field = "";
+          } else if (char === '\n') {
+            row.push(field);
+            rows.push(row);
+            row = [];
+            field = "";
+          } else if (char === '\r') {
+            // Ignore CR. LF handles Windows line endings.
+          } else {
+            field += char;
+          }
+        }
+      }
+
+      if (field.length > 0 || row.length > 0) {
+        row.push(field);
+        rows.push(row);
+      }
+
+      return rows;
+    }
+
+    function csvEscape(value) {
+      const text = value == null ? "" : String(value);
+      if (/[",\r\n]/.test(text)) {
+        return '"' + text.replace(/"/g, '""') + '"';
+      }
+      return text;
+    }
+
+    function toCsv(rows) {
+      return rows.map(row => row.map(csvEscape).join(",")).join("\r\n") + "\r\n";
+    }
+
+    function downloadCsv(filename, csvText) {
+      const blob = new Blob([csvText], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function outputFilename(inputName) {
+      const dot = inputName.lastIndexOf(".");
+      if (dot > 0) return inputName.slice(0, dot) + "_deduped" + inputName.slice(dot);
+      return inputName + "_deduped.csv";
+    }
+
+    function processCsvText(text) {
+      const rows = parseCsv(text);
+      if (rows.length === 0 || rows[0].length === 0) {
+        throw new Error("CSV file is empty or missing a header row.");
+      }
+
+      const header = rows[0];
+      const missing = REQUIRED_COLUMNS.filter(col => !header.includes(col));
+      if (missing.length) {
+        throw new Error("Missing required column(s): " + missing.join(", "));
+      }
+
+      const productNameIndex = header.indexOf("Product Name");
+      const productImagesIndex = header.indexOf("Product Images");
+      const variantImagesIndex = header.indexOf("Variant Images");
+      const variantNameIndex = header.indexOf("Variant Name");
+
+      const dataRows = rows.slice(1).filter(row => row.some(cell => cell !== ""));
+
+      for (const row of dataRows) {
+        while (row.length < header.length) row.push("");
+      }
+
+      const counts = new Map();
+      for (const row of dataRows) {
+        const productName = row[productNameIndex] || "";
+        counts.set(productName, (counts.get(productName) || 0) + 1);
+      }
+
+      const variantNumbers = new Map();
+      let updatedRows = 0;
+
+      for (const row of dataRows) {
+        const productName = row[productNameIndex] || "";
+        if ((counts.get(productName) || 0) > 1) {
+          const nextNumber = (variantNumbers.get(productName) || 0) + 1;
+          variantNumbers.set(productName, nextNumber);
+          row[variantImagesIndex] = row[productImagesIndex] || "";
+          row[variantNameIndex] = "Card " + nextNumber;
+          updatedRows++;
+        }
+      }
+
+      return {
+        csv: toCsv([header, ...dataRows]),
+        updatedRows,
+        duplicateProducts: Array.from(counts.values()).filter(count => count > 1).length
+      };
+    }
+
+    function handleFile(file) {
+      if (!file) return;
+      if (!file.name.toLowerCase().endsWith(".csv")) {
+        setStatus("Please choose a .csv file.", "error");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const result = processCsvText(String(reader.result || ""));
+          downloadCsv(outputFilename(file.name), result.csv);
+          setStatus(
+            `Processed ${file.name}\nUpdated ${result.updatedRows} duplicate row(s) across ${result.duplicateProducts} duplicated product name(s).\nDownloaded ${outputFilename(file.name)}.`,
+            "success"
+          );
+        } catch (error) {
+          setStatus(error.message || String(error), "error");
+        }
+      };
+      reader.onerror = () => setStatus("Could not read the selected file.", "error");
+      reader.readAsText(file);
+    }
+
+    dropZone.addEventListener("click", () => fileInput.click());
+    dropZone.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        fileInput.click();
+      }
+    });
+    fileInput.addEventListener("change", () => handleFile(fileInput.files[0]));
+
+    ["dragenter", "dragover"].forEach(eventName => {
+      dropZone.addEventListener(eventName, event => {
+        event.preventDefault();
+        dropZone.classList.add("dragover");
+      });
+    });
+
+    ["dragleave", "drop"].forEach(eventName => {
+      dropZone.addEventListener(eventName, event => {
+        event.preventDefault();
+        dropZone.classList.remove("dragover");
+      });
+    });
+
+    dropZone.addEventListener("drop", event => {
+      handleFile(event.dataTransfer.files[0]);
+    });
+  </script>
+</body>
+</html>
