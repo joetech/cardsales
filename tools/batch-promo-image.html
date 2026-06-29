@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Image Composer</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #f4f4f4;
+        color: #111;
+      }
+
+      #prompt {
+        font-size: 48px;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .toggle {
+        font-size: 20px;
+        margin-bottom: 30px;
+      }
+
+      #preview {
+        max-width: 90vw;
+        max-height: 70vh;
+        display: none;
+        border: 1px solid #ccc;
+        background: white;
+      }
+
+      #status {
+        margin-top: 20px;
+        font-size: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="prompt">Paste multi-card image</div>
+
+    <label class="toggle">
+      Output:
+      <select id="outputMode">
+        <option value="download">Download</option>
+        <option value="clipboard">Copy to clipboard</option>
+      </select>
+    </label>
+
+    <canvas id="canvas" style="display: none"></canvas>
+    <img id="preview" alt="Generated preview" />
+    <div id="status"></div>
+
+    <script>
+      const promptEl = document.getElementById("prompt");
+      const statusEl = document.getElementById("status");
+      const outputModeEl = document.getElementById("outputMode");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const preview = document.getElementById("preview");
+
+      let backgroundImage = null;
+      let focusImage = null;
+
+      const savedMode = localStorage.getItem("imageComposerOutputMode");
+      if (savedMode) outputModeEl.value = savedMode;
+
+      outputModeEl.addEventListener("change", () => {
+        localStorage.setItem("imageComposerOutputMode", outputModeEl.value);
+      });
+
+      window.addEventListener("paste", async (event) => {
+        const items = event.clipboardData?.items;
+        if (!items) return;
+
+        for (const item of items) {
+          if (item.type.startsWith("image/")) {
+            const file = item.getAsFile();
+            const img = await loadImage(file);
+
+            if (!backgroundImage) {
+              backgroundImage = img;
+              promptEl.textContent = "Paste the focus image";
+              statusEl.textContent = "Background image captured.";
+            } else if (!focusImage) {
+              focusImage = img;
+              statusEl.textContent = "Focus image captured. Generating...";
+              await generateImage();
+            }
+
+            return;
+          }
+        }
+
+        statusEl.textContent = "No image found in clipboard.";
+      });
+
+      function loadImage(file) {
+        return new Promise((resolve, reject) => {
+          const url = URL.createObjectURL(file);
+          const img = new Image();
+
+          img.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(img);
+          };
+
+          img.onerror = reject;
+          img.src = url;
+        });
+      }
+
+      async function generateImage() {
+        const bgW = backgroundImage.naturalWidth;
+        const bgH = backgroundImage.naturalHeight;
+
+        canvas.width = bgW;
+        canvas.height = bgH;
+
+        ctx.clearRect(0, 0, bgW, bgH);
+        ctx.drawImage(backgroundImage, 0, 0, bgW, bgH);
+
+        const maxFocusW = bgW * 0.7;
+        const maxFocusH = bgH * 0.7;
+
+        const scale = Math.min(
+          maxFocusW / focusImage.naturalWidth,
+          maxFocusH / focusImage.naturalHeight,
+        );
+
+        const focusW = focusImage.naturalWidth * scale;
+        const focusH = focusImage.naturalHeight * scale;
+
+        ctx.save();
+        ctx.translate(bgW / 2, bgH / 2);
+        ctx.rotate((25 * Math.PI) / 180);
+        ctx.drawImage(focusImage, -focusW / 2, -focusH / 2, focusW, focusH);
+        ctx.restore();
+
+        const blob = await new Promise((resolve) =>
+          canvas.toBlob(resolve, "image/png"),
+        );
+
+        preview.src = URL.createObjectURL(blob);
+        preview.style.display = "block";
+
+        if (outputModeEl.value === "clipboard") {
+          await copyBlobToClipboard(blob);
+        } else {
+          downloadBlob(blob);
+        }
+
+        promptEl.textContent = "Paste multi-card image";
+        statusEl.textContent =
+          "Done. Paste another background image to start again.";
+
+        backgroundImage = null;
+        focusImage = null;
+      }
+
+      function downloadBlob(blob) {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "combined-image.png";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      }
+
+      async function copyBlobToClipboard(blob) {
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ "image/png": blob }),
+          ]);
+          statusEl.textContent = "Done. Image copied to clipboard.";
+        } catch (err) {
+          statusEl.textContent = "Clipboard copy failed. Downloading instead.";
+          downloadBlob(blob);
+        }
+      }
+    </script>
+  </body>
+</html>
