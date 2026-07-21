@@ -462,15 +462,67 @@ function getProductUrl() {
     );
 
     ctx.font =
-      `700 ${fontSize}px system-ui, -apple-system, sans-serif`;
+  `700 ${fontSize}px system-ui, -apple-system, sans-serif`;
 
-    ctx.textAlign = 'right';
+ctx.textAlign = 'right';
 
-    ctx.fillText(
-      formatPriceFn(finalPrice),
-      padding + innerWidth,
-      y
-    );
+const rightEdge = padding + innerWidth;
+const originalPriceText = formatPriceFn(v.price);
+const finalPriceText = formatPriceFn(finalPrice);
+
+if (discount > 0) {
+  // Draw the discounted price on the right.
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(
+    finalPriceText,
+    rightEdge,
+    y
+  );
+
+  const finalPriceWidth =
+    ctx.measureText(finalPriceText).width;
+
+  const priceGap = 16;
+  const originalPriceRight =
+    rightEdge - finalPriceWidth - priceGap;
+
+  // Draw the original price before it.
+  ctx.font =
+    `500 ${fontSize * 0.85}px system-ui, -apple-system, sans-serif`;
+
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.fillText(
+    originalPriceText,
+    originalPriceRight,
+    y
+  );
+
+  // Draw a line through the original price.
+  const originalPriceWidth =
+    ctx.measureText(originalPriceText).width;
+
+  const strikeY = y;
+  const strikeStart =
+    originalPriceRight - originalPriceWidth;
+  const strikeEnd =
+    originalPriceRight;
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+  ctx.lineWidth = Math.max(2, fontSize * 0.07);
+
+  ctx.beginPath();
+  ctx.moveTo(strikeStart, strikeY);
+  ctx.lineTo(strikeEnd, strikeY);
+  ctx.stroke();
+} else {
+  ctx.fillStyle = '#ffffff';
+
+  ctx.fillText(
+    originalPriceText,
+    rightEdge,
+    y
+  );
+}
 
     if (i < rowCount - 1) {
       ctx.strokeStyle = 'rgba(255,255,255,0.15)';
@@ -729,6 +781,12 @@ function getProductUrl() {
       });
     }
 
+      function strikethroughText(text) {
+          return [...text]
+              .map(char => `${char}\u0336`)
+              .join('');
+      }
+
     // ── Copy all ──
     function getCopyText() {
   const discount = getDiscount();
@@ -736,13 +794,15 @@ function getProductUrl() {
   const productUrl = getProductUrl();
 
   const variantText = variants.map(v => {
-    const finalPrice = discountedPrice(
-      v.price,
-      discount
-    );
+  const originalPrice = formatPrice(v.price);
+  const finalPrice = discountedPrice(v.price, discount);
 
-    return `${v.name}: ${formatPrice(finalPrice)}`;
-  }).join('\n');
+  if (discount > 0) {
+    return `${v.name}: ${strikethroughText(originalPrice)}  ${formatPrice(finalPrice)}`;
+  }
+
+  return `${v.name}: ${originalPrice}`;
+}).join('\n');
 
   return `${title}\n\n${variantText}\n\n${productUrl}`;
 }
